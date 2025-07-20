@@ -27,13 +27,13 @@ import { toast } from 'react-hot-toast';
 
 export default function LoginDesign() {
 
-   const navigate = useNavigate();
+    const navigate = useNavigate();
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
 
-    async function handleLogin(){
-        try{
-            const response = await axios.post(import.meta.env.VITE_BACKEND_URL + '/api/user/login',{
+    async function handleLogin() {
+        try {
+            const response = await axios.post(import.meta.env.VITE_BACKEND_URL + '/api/user/login', {
                 email: email,
                 password: password
             })
@@ -41,30 +41,30 @@ export default function LoginDesign() {
             localStorage.setItem("token", response.data.token);
             console.log(response.data.role);
 
-            if(response.data.role === "Tourist")    {
+            if (response.data.role === "Tourist") {
                 navigate("/tourist/dashboard");
-            } 
-            else if(response.data.role === "Guide") {
+            }
+            else if (response.data.role === "Guide") {
                 navigate("/guide/dashboard");
-            } 
-            else if(response.data.role === "HotelOwner") {
+            }
+            else if (response.data.role === "HotelOwner") {
                 navigate("/hotelowner/dashboard");
-            } 
-            else if(response.data.role === "Admin") {
+            }
+            else if (response.data.role === "Admin") {
                 navigate("/admin/dashboard");
-            } 
+            }
             else {
                 toast.error("Invalid user role!");
             }
 
-          
-        
-        }catch(error){
+
+
+        } catch (error) {
             toast.error("Login failed! Please check your credentials.");
             console.error("Login error:", error);
-            
-            
-    }
+
+
+        }
     }
     // Trust indicators
     const trustIndicators = [
@@ -225,7 +225,7 @@ export default function LoginDesign() {
                                         <div className="relative group">
                                             <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
                                             <input
-                                            onChange={(e) => setEmail(e.target.value)}
+                                                onChange={(e) => setEmail(e.target.value)}
                                                 type="email"
                                                 className="w-full pl-12 pr-4 py-4 bg-white/60 backdrop-blur-md border-2 border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:border-teal-400 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none"
                                                 placeholder="your@email.com"
@@ -286,7 +286,7 @@ export default function LoginDesign() {
                                     {/* Submit Button */}
                                     <div>
                                         <button
-                                        onClick={handleLogin}
+                                            onClick={handleLogin}
                                             type="submit"
                                             className="w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-sky-500 text-white py-4 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-teal-500/25 transition-all duration-500 flex items-center justify-center space-x-3 group hover:scale-105 active:scale-95 relative overflow-hidden"
                                         >
@@ -301,12 +301,12 @@ export default function LoginDesign() {
                                         <p className="text-gray-600 mb-4">
                                             New to TourNexus?
                                         </p>
-                                        
-                                            <Link to="/register" className="flex items-center">
+
+                                        <Link to="/register" className="flex items-center">
                                             <span>Register Here</span>
-                                            </Link>
-                                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                                        
+                                        </Link>
+                                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+
                                     </div>
                                 </div>
                             </div>

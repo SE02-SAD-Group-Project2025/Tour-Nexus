@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 
 export default function RegisterTouristDesign() {
     const navigate = useNavigate();
-    
+
     // State management for all form fields
     const [fullname, setFullName] = useState("");
     const [email, setEmail] = useState("");
@@ -15,14 +15,14 @@ export default function RegisterTouristDesign() {
     const [role, setRole] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    
 
-    
+
+
     async function handleRegister() {
-        try{
+        try {
             await axios.post(import.meta.env.VITE_BACKEND_URL + '/api/user/register', {
                 fullname,
                 email,
@@ -34,7 +34,7 @@ export default function RegisterTouristDesign() {
             toast.success("Registration Successfull");
             navigate("/login");
 
-        }catch(error){
+        } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
             console.error("Registration error:", error);
         }
@@ -181,7 +181,7 @@ export default function RegisterTouristDesign() {
                                     </p>
                                 </div>
 
-                                
+
 
                                 {/* Registration Form */}
                                 <div className="space-y-6">
@@ -306,26 +306,26 @@ export default function RegisterTouristDesign() {
                                         </div>
                                     </div>
 
-                           {/* Submit Button */}
-                             <div>
-                                <button
-                                    onClick={handleRegister}
-                                         type="submit"
+                                    {/* Submit Button */}
+                                    <div>
+                                        <button
+                                            onClick={handleRegister}
+                                            type="submit"
                                             className="w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-sky-500 text-white py-4 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-teal-500/25 transition-all duration-500 flex items-center justify-center space-x-3 group hover:scale-105 active:scale-95 relative overflow-hidden"
-                                >
-                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                    <span className="z-10">Sign In</span>
-                                        <ArrowRight className="w-5 h-5 z-10 group-hover:translate-x-1 transition-transform duration-300" />
-                                </button>
-                            </div>
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                            <span className="z-10">Sign In</span>
+                                            <ArrowRight className="w-5 h-5 z-10 group-hover:translate-x-1 transition-transform duration-300" />
+                                        </button>
+                                    </div>
 
                                     {/* Login Link */}
                                     <div className="text-center pt-6 border-t border-gray-200">
                                         <p className="text-gray-600 mb-4">
                                             Already have an account?
                                         </p>
-                                        <Link 
-                                            to="/login" 
+                                        <Link
+                                            to="/login"
                                             className="inline-flex items-center text-teal-600 hover:text-teal-700 font-semibold transition-colors duration-300 hover:underline group"
                                         >
                                             <span>Sign in here</span>
