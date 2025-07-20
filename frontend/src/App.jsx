@@ -16,7 +16,7 @@ import TouristPersonalDetails from './tourist/updateprofile';
 function App() {
   return (
     <BrowserRouter>
-      <Toaster position = "top-center" />
+      <Toaster position="top-center" />
       <Routes>
         <Route path="/" element={<TourismDesign />} />
         <Route path="/login" element={<LoginDesign />} />
