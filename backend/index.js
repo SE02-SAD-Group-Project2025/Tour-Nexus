@@ -16,7 +16,7 @@ app.use((req, res, next) => {
     const tokenString = req.header('Authorization');
 
     if (tokenString) {
-        // FIX: Add the missing space after "Bearer"
+        
         const token = tokenString.replace("Bearer ", ""); // <-- This was the main problem!
 
         jwt.verify(token, "secretkey", (err, decoded) => {
