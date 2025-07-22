@@ -53,3 +53,66 @@ export async function addHotel(req,res){
         });
     }
 }
+
+export async function approveHotel(req,res){
+    if(!isAdmin(req)){
+        return res.status(403).json({
+            success: false,
+            message : "unauthorized",
+        });
+        return
+    }
+    try{
+        await Hotel.updateOne(
+            {hotel_id : req.params.hotel_id},
+            {status: "approved"}
+        );
+        res.status(200).json({
+            success: true,
+            message:"hotel approved successfully"
+        });
+    }catch(error){
+        res.status(500).json({
+        success: false,
+        message:"error approving",
+        error:error.message,
+    });
+}
+}
+
+export async function rejectHotel(req,res){
+    if(!isAdmin(req)){
+        return res.status(403).json({
+            success: false,
+            message : "unauthorized",
+        });
+        return
+    }
+    try{
+        await Hotel.updateOne(
+            {hotel_id : req.params.hotel_id},
+            {status: "rejected"}
+        );
+        res.status(200).json({
+            success: true,
+            message:"hotel rejected successfully"
+        });
+    }catch(error){
+        res.status(500).json({
+        success: false,
+        message:"error rejecting",
+        error:error.message,
+    });
+}}
+
+export async function getPendingHotels(req,res) {
+    try{
+        const pendingHotels = await Hotel.find({status: "pending"});
+        res.json(pendingHotels);
+    }catch(err){
+        res.status(500).json({
+            message: "Failed to get pending Hotels",
+            error: err.message,
+        })
+    }
+}
