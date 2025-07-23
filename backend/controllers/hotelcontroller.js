@@ -116,3 +116,87 @@ export async function getPendingHotels(req,res) {
         })
     }
 }
+
+export async function updateHotels(req, res) {
+    try{
+        // Recalculate total rooms if room_types are updated
+        if(req.body.room_types){
+            let total_rooms = 0;
+            for(let i = 0; i < req.body.room_types.length; i++){
+                total_rooms += req.body.room_types[i].count;
+            }
+            req.body.total_rooms = total_rooms;
+        }
+
+        await Hotel.updateOne({hotel_id:req.params.hotel_id},req.body);
+        res.status(200).json({
+            success: true,
+            message: "Hotel updated successfully",
+        });
+    }
+    catch(error){
+        res.status(500).json({
+            success: false,
+            message: "Error updating hotel",
+        })
+    }
+}
+
+export async function getApprovedHotels(req,res) {
+    try{
+        const approvedHotels = await Hotel.find({status: "approved"});
+        res.json(approvedHotels);
+    }catch(err){
+        res.status(500).json({
+            message: "Failed to get approved Hotels",
+            error: err.message,
+        })
+    }
+}
+
+export async function getHotelsByHotelOwner(req, res) {
+    const email = req.params.email;
+
+    try {
+        const hotels = await Hotel.find({ email: email });
+
+        res.status(200).json({
+            success: true,
+            data: hotels,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching hotels",
+            error: error.message,
+        });
+    }
+}
+
+export async function deleteHotel(req, res) {
+try{
+    await Hotel.deleteOne({hotel_id:req.params.hotel_id});
+    res.status(200).json({
+        success: true,
+        message: "Hotel deleted successfully",
+    });
+    }
+catch(error){
+    res.status(500).json({
+        success: false,
+        message: "Error deleting hotel",
+    })
+    }
+}
+
+export async function view_all_hotels(req,res) {
+    try{
+        const viewHotels = await Hotel.find();
+        res.json(viewHotels);
+    }catch(err){
+        res.status(500).json({
+            message: "Failed to get Hotels",
+            error: err.message,
+        })
+    }
+}
