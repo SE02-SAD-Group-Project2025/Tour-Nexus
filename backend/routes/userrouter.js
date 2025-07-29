@@ -7,4 +7,5 @@ userRouter.post('/register', createUser)
 userRouter.post('/login', loginUser)
 userRouter.put('/:email',updateTourist)
 userRouter.delete('/:email',deleteTourist);
+userRouter.get('/view-all-users', view_all_users);
 export default userRouter;
