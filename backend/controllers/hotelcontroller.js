@@ -189,6 +189,20 @@ catch(error){
     }
 }
 
+export async function getHotelById(req, res) {
+    try {
+        const hotel_id = req.params.hotel_id;
+
+        const hotel = await Hotel.findOne({ hotel_id: hotel_id });
+
+        res.json(hotel);
+    } catch (error) {
+        res.status(500).json({
+            error,
+        })
+    }
+}
+
 export async function view_all_hotels(req,res) {
     try{
         const viewHotels = await Hotel.find();
