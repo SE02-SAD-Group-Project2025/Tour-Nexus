@@ -11,6 +11,7 @@ import GuideRegistrationForm from './guide/guide_register';
 import HotelOwnerMultipleHotelsContainer from './hotel-owner/hotel_ownerdashboard';
 import { Toaster } from 'react-hot-toast';
 import TouristPersonalDetails from './tourist/updateprofile';
+import AddGuideForm from './guide/guide_register';
 
 
 function App() {
@@ -31,6 +32,10 @@ function App() {
         <Route path="/hotelowner/dashboard" element={<HotelOwnerMultipleHotelsContainer />}></Route>
         <Route path="/guide/addguide" element={<GuideRegistrationForm />}></Route>
         <Route path="/tourist/profile" element={<TouristPersonalDetails />}></Route>
+        <Route path="/guide/dashboard" element={<GuideDashboardContainer />}></Route>
+        <Route path="/guide/addguide" element={<AddGuideForm />}></Route>
+
+
       </Routes>
     </BrowserRouter>
   );
