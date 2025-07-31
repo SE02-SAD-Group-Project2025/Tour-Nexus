@@ -31,6 +31,8 @@ export async function addHotel(req,res){
             hotel_name: req.body.hotel_name,
             images: req.body.images,
             address: req.body.address,
+            city: req.body.city,
+            contact_number: req.body.contact_number,
             description: req.body.description,
             parking_available: req.body.parking_available,
             room_types: req.body.room_types,  // This handles the flexible room types
@@ -212,5 +214,34 @@ export async function view_all_hotels(req,res) {
             message: "Failed to get Hotels",
             error: err.message,
         })
+    }
+}
+
+export async function getHotelStats(req, res) {
+    try {
+        const stats = await Hotel.aggregate([
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const result = { pending: 0, approved: 0, rejected: 0 };
+        
+        stats.forEach(stat => {
+            if (result.hasOwnProperty(stat._id)) {
+                result[stat._id] = stat.count;
+            }
+        });
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching hotel stats",
+            error: error.message
+        });
     }
 }

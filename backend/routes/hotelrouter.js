@@ -4,6 +4,7 @@ import { addHotel, approveHotel, deleteHotel, getApprovedHotels, getHotelsByHote
 const hotelRouter = express.Router();
 
 hotelRouter.post('/addhotel', addHotel);
+
 hotelRouter.put("/approve_hotel/:hotel_id",approveHotel);
 hotelRouter.put("/reject_hotel/:hotel_id",rejectHotel);
 hotelRouter.get("/view_pending_hotels",getPendingHotels);
@@ -12,6 +13,7 @@ hotelRouter.get("/view_hotels_by_hotel_owner/:email",getHotelsByHotelOwner);
 hotelRouter.put("/update_hotel/:hotel_id",updateHotels);
 hotelRouter.delete("/delete_hotel/:hotel_id",deleteHotel);
 hotelRouter.get("/view_all_hotels",view_all_hotels);
-
+hotelRouter.get("/view_hotels_by_id/:hotel_id",getHotelById);
+hotelRouter.get("/stats", getHotelStats);
 
 export default hotelRouter;
