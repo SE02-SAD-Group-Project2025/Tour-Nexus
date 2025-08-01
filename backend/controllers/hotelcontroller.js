@@ -245,3 +245,155 @@ export async function getHotelStats(req, res) {
         });
     }
 }
+
+
+export async function searchHotels(req, res) {
+    try {
+        const { 
+            destination, 
+            checkInDate, 
+            checkOutDate, 
+            adults = 2, 
+            children = 0,
+            minPrice,
+            maxPrice,
+            sortBy = 'name' // name, price, rating
+        } = req.query;
+
+        // search query
+        let searchQuery = { status: "approved" };
+
+        // Search by destination (city, hotel name, or address)
+        if (destination) {
+            searchQuery.$or = [
+                { city: { $regex: destination, $options: 'i' } },
+                { hotel_name: { $regex: destination, $options: 'i' } },
+                { address: { $regex: destination, $options: 'i' } }
+            ];
+        }
+
+        // Price filtering
+        if (minPrice || maxPrice) {
+            searchQuery['room_types.price'] = {};
+            if (minPrice) searchQuery['room_types.price'].$gte = parseInt(minPrice);
+            if (maxPrice) searchQuery['room_types.price'].$lte = parseInt(maxPrice);
+        }
+
+        
+        const totalGuests = parseInt(adults) + parseInt(children);
+        if (totalGuests > 0) {
+            
+            searchQuery['room_types.count'] = { $gt: 0 };
+        }
+
+        // Build sort options
+        let sortOptions = {};
+        switch (sortBy) {
+            case 'price':
+                sortOptions = { 'room_types.price': 1 }; // Ascending price
+                break;
+            case 'name':
+                sortOptions = { hotel_name: 1 };
+                break;
+            default:
+                sortOptions = { date: -1 }; // Latest first
+        }
+
+        // Execute search with pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 12;
+        const skip = (page - 1) * limit;
+
+        const [hotels, total] = await Promise.all([
+            Hotel.find(searchQuery)
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Hotel.countDocuments(searchQuery)
+        ]);
+
+        // Filter hotels based on availability 
+        const availableHotels = hotels.filter(hotel => {
+            
+            return true;
+        });
+
+        res.json({
+            success: true,
+            data: availableHotels,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            },
+            searchCriteria: {
+                destination,
+                checkInDate,
+                checkOutDate,
+                adults: parseInt(adults),
+                children: parseInt(children),
+                totalGuests
+            }
+        });
+
+    } catch (error) {
+        console.error("Error searching hotels:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error searching hotels",
+            error: error.message
+        });
+    }
+}
+
+//  getHotelById with availability check
+export async function getHotelByIdWithAvailability(req, res) {
+    try {
+        const { hotel_id } = req.params;
+        const { checkInDate, checkOutDate, adults, children } = req.query;
+
+        const hotel = await Hotel.findOne({ hotel_id: hotel_id });
+
+        if (!hotel) {
+            return res.status(404).json({
+                success: false,
+                message: "Hotel not found"
+            });
+        }
+
+        // If dates are provided, check availability
+        let availability = null;
+        if (checkInDate && checkOutDate) {
+            
+            availability = {
+                available: true, 
+                availableRooms: hotel.room_types.map(room => ({
+                    ...room,
+                    availableCount: room.count 
+                }))
+            };
+        }
+
+        res.json({
+            success: true,
+            data: hotel,
+            availability,
+            searchCriteria: checkInDate ? {
+                checkInDate,
+                checkOutDate,
+                adults: parseInt(adults) || 2,
+                children: parseInt(children) || 0
+            } : null
+        });
+
+    } catch (error) {
+        console.error("Error fetching hotel:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching hotel",
+            error: error.message
+        });
+    }
+}
