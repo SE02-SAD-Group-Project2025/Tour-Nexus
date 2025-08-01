@@ -1,5 +1,5 @@
 import express from 'express';
-import { addHotel, approveHotel, deleteHotel, getApprovedHotels, getHotelsByHotelOwner, getPendingHotels, rejectHotel, updateHotels, view_all_hotels } from '../controllers/hotelcontroller.js';
+import { addHotel, approveHotel, deleteHotel, getApprovedHotels, getHotelByIdWithAvailability, getHotelsByHotelOwner, getHotelStats, getPendingHotels, rejectHotel, searchHotels, updateHotels, view_all_hotels } from '../controllers/hotelcontroller.js';
 
 const hotelRouter = express.Router();
 
@@ -15,5 +15,9 @@ hotelRouter.delete("/delete_hotel/:hotel_id",deleteHotel);
 hotelRouter.get("/view_all_hotels",view_all_hotels);
 hotelRouter.get("/view_hotels_by_id/:hotel_id",getHotelById);
 hotelRouter.get("/stats", getHotelStats);
+
+
+hotelRouter.get("/search", searchHotels);
+hotelRouter.get("/view_hotels_by_id_with_availability/:hotel_id", getHotelByIdWithAvailability);
 
 export default hotelRouter;
