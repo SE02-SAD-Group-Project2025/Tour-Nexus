@@ -35,6 +35,9 @@ function App() {
         <Route path="/guide/dashboard" element={<GuideDashboardContainer />}></Route>
         <Route path="/guide/addguide" element={<AddGuideForm />}></Route>
 
+        <Route path="/admin/usermanagement" element={<UserManagement />}></Route>
+        <Route path="/admin/pendingapprovels" element={<PendingApprovalsPage />}></Route>
+        <Route path="/admin/pendingapprovels/:hotel_id" element={<RequestedHotelDetails />}></Route>
 
       </Routes>
     </BrowserRouter>
