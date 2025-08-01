@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 .env
 
-src/utils/mediaUpload
+src/utils/mediaUpload.jsx
