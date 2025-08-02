@@ -1,663 +1,1412 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-
+import axios from 'axios';
+import { useState, useEffect } from 'react';
 import { 
-    Globe, Bell, User, Settings, LogOut, Search, Calendar, MapPin, 
-    Hotel, DollarSign, TrendingUp, Activity, CheckCircle, XCircle, 
-    MessageCircle, Eye, Edit, Plus, Filter, BarChart3, Bed,
-    Users, Star, Clock, ArrowRight, Menu, X, ChevronDown,
-    Key, Wrench, ClipboardList, PieChart, Phone, Mail, AlertCircle,
-    Home, Wifi, Car, Coffee, Utensils, Waves, Dumbbell, Shield,
-    Building, Image, Save, Trash2, FileText, Camera
+    Globe, Bell, User, Settings, LogOut, Calendar, MapPin, 
+    Hotel, Activity, MessageCircle, Edit, Plus, BarChart3, Bed,
+    Star, Menu, X, ChevronDown, Building, Trash2, 
+    Home, Wifi, Car, Coffee, Utensils, Shield
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
-// Hotel Management Component
-function HotelOwnerMultipleHotels({ 
-    user, 
-    hotels, 
-    onSidebarToggle,
-    onProfileToggle,
-    onNotificationToggle,
-    onLogout,
-    onAddHotel,
-    onEditHotel,
-    onDeleteHotel,
-    onSelectHotel,
-    // selectedHotelId,
-    sidebarOpen = false,
-    profileDropdownOpen = false,
-    notificationDropdownOpen = false
-}) {
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [editingHotel, setEditingHotel] = useState(null);
-    const [newHotel, setNewHotel] = useState({
-        name: '',
-        location: '',
-        description: '',
-        address: '',
-        phone: '',
-        email: '',
-        total_rooms: '',
-        amenities: [],
-        images: []
-    });
 
-    // Default hotels if not provided from backend
-    const defaultHotels = hotels || [
-        {
-            id: 1,
-            name: 'Ocean View Hotel',
-            location: 'Colombo, Sri Lanka',
-            description: 'Luxury beachfront hotel with stunning ocean views',
-            address: '123 Marine Drive, Colombo 03',
-            phone: '+94 11 234 5678',
-            email: 'info@oceanview.lk',
-            total_rooms: 38,
-            occupancy_rate: 78,
-            rating: 4.6,
-            monthly_revenue: 12450,
-            amenities: ['WiFi', 'Pool', 'Spa', 'Restaurant', 'Gym', 'Parking'],
-            images: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400'],
-            status: 'Active'
-        },
-        {
-            id: 2,
-            name: 'Mountain Resort',
-            location: 'Kandy, Sri Lanka',
-            description: 'Peaceful mountain retreat with traditional charm',
-            address: '456 Hill Country Road, Kandy',
-            phone: '+94 81 567 8901',
-            email: 'info@mountainresort.lk',
-            total_rooms: 25,
-            occupancy_rate: 65,
-            rating: 4.4,
-            monthly_revenue: 8900,
-            amenities: ['WiFi', 'Restaurant', 'Garden', 'Parking', 'Spa'],
-            images: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400'],
-            status: 'Active'
-        }
-    ];
-
-    const amenityOptions = [
-        'WiFi', 'Pool', 'Spa', 'Restaurant', 'Gym', 'Parking', 
-        'Room Service', 'Laundry', 'Business Center', 'Conference Room',
-        'Garden', 'Beach Access', 'Airport Shuttle', 'Pet Friendly'
-    ];
+function HotelOwnerDashboard() {
+    const [hotels, setHotels] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [activeMenuItem, setActiveMenuItem] = useState('Dashboard');
+    const [showDropdown, setShowDropdown] = useState(false);
+    
+    
+    
+    const userEmail = localStorage.getItem('email');
 
     const sidebarItems = [
-        { name: 'Dashboard', icon: Activity, href: '/hotel-dashboard' },
-        { name: 'My Hotels', icon: Building, href: '/hotel-management/hotels', current: true },
-        { name: 'Bookings', icon: Calendar, href: '/hotel-management/bookings' },
-        { name: 'Reports', icon: BarChart3, href: '/hotel-management/reports' },
-        { name: 'Messages', icon: MessageCircle, href: '/hotel-management/messages' },
-        { name: 'Settings', icon: Settings, href: '/hotel-management/settings' },
-        { name: 'Profile', icon: User, href: '/profile' }
+        { name: 'Dashboard', icon: Activity, emoji: '📊' },
+        { name: 'My Hotels', icon: Building, emoji: '🏨' },
+        { name: 'Bookings', icon: Calendar, emoji: '📅' },
+        { name: 'Reports', icon: BarChart3, emoji: '📊' },
+        { name: 'Messages', icon: MessageCircle, emoji: '💬' },
+        { name: 'Profile', icon: User, emoji: '👤' },
+        { name: 'Settings', icon: Settings, emoji: '⚙️' }
     ];
 
-    const notifications = [
-        { id: 1, message: 'New booking for Ocean View Hotel', time: '15 minutes ago', read: false },
-        { id: 2, message: 'Mountain Resort received a 5-star review', time: '1 hour ago', read: false },
-        { id: 3, message: 'Monthly report ready for download', time: '2 hours ago', read: true }
-    ];
-
-    const handleNavigation = (href) => {
-        console.log(`Navigating to: ${href}`);
+    
+    const fetchHotelsByOwner = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            
+            console.log(`Fetching hotels for owner: ${userEmail}`);
+            
+            const response = await axios.get(
+                `${import.meta.env.VITE_BACKEND_URL}/api/hotel/view_hotels_by_hotel_owner/${userEmail}`
+            );
+            
+            console.log('Raw API Response:', response.data);
+            
+            if (response.data.success) {
+                
+                const transformedHotels = response.data.data.map((hotel) => ({
+                    
+                    id: hotel._id,
+                    hotel_id: hotel.hotel_id,
+                    hotel_name: hotel.hotel_name || 'Unnamed Hotel',
+                    email: hotel.email,
+                    address: hotel.address,
+                    city: hotel.city || 'City not specified',
+                    contact_number: hotel.contact_number,
+                    description: hotel.description || 'No description available',
+                    parking_available: hotel.parking_available || false,
+                    status: hotel.status || 'pending',
+                    total_rooms: hotel.total_rooms || 0,
+                    date: hotel.date,
+                    
+                    // Transform images array
+                    images: Array.isArray(hotel.images) ? hotel.images : [],
+                    
+                    // Transform room_types to consistent format
+                    room_types: Array.isArray(hotel.room_types) ? hotel.room_types.map((room, index) => ({
+                        id: index + 1,
+                        type: room.name || room.type || 'Standard Room',
+                        name: room.name || room.type || 'Standard Room',
+                        count: room.count || 0,
+                        price: room.price || 0,
+                        facilities: Array.isArray(room.facilities) ? room.facilities : [],
+                        images: Array.isArray(room.images) ? room.images : []
+                    })) : [],
+                    
+                    // Add computed properties
+                    totalRoomTypes: Array.isArray(hotel.room_types) ? hotel.room_types.length : 0,
+                    hasImages: Array.isArray(hotel.images) && hotel.images.length > 0,
+                    registrationDate: hotel.date ? new Date(hotel.date).toLocaleDateString() : 'Unknown'
+                }));
+                
+                console.log('Transformed Hotels:', transformedHotels);
+                setHotels(transformedHotels);
+                
+                
+                if (!isLoading) {
+                    toast.success(`Successfully loaded ${transformedHotels.length} hotel${transformedHotels.length !== 1 ? 's' : ''}`);
+                }
+            } else {
+                const errorMessage = response.data.message || 'Failed to fetch hotels';
+                setError(errorMessage);
+                console.error('API returned error:', errorMessage);
+                toast.error(errorMessage);
+            }
+        } catch (error) {
+            console.error('Error fetching hotels:', error);
+            
+            // Detailed error handling
+            let errorMessage = 'Failed to fetch hotels';
+            
+            if (error.response) {
+                // Server responded with error status
+                switch (error.response.status) {
+                    case 404:
+                        errorMessage = 'No hotels found for this owner';
+                        break;
+                    case 401:
+                        errorMessage = 'Authentication required. Please log in again.';
+                        break;
+                    case 403:
+                        errorMessage = 'Access denied. Please check your permissions.';
+                        break;
+                    case 500:
+                        errorMessage = 'Server error. Please try again later.';
+                        break;
+                    default:
+                        errorMessage = error.response.data?.message || `Server error (${error.response.status})`;
+                }
+            } else if (error.request) {
+                // Network error
+                errorMessage = 'Network error. Please check your internet connection.';
+            } else {
+                // Other error
+                errorMessage = error.message || 'An unexpected error occurred';
+            }
+            
+            setError(errorMessage);
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    // const handleAddHotel = () => {
-    //     setShowAddForm(true);
-    //     setEditingHotel(null);
-    //     setNewHotel({
-    //         name: '',
-    //         location: '',
-    //         description: '',
-    //         address: '',
-    //         phone: '',
-    //         email: '',
-    //         total_rooms: '',
-    //         amenities: [],
-    //         images: []
-    //     });
-    // };
-
-    const handleEditHotel = (hotel) => {
-        setEditingHotel(hotel);
-        setNewHotel(hotel);
-        setShowAddForm(true);
-    };
-
-    const handleSaveHotel = () => {
-        if (editingHotel) {
-            console.log('Updating hotel:', newHotel);
-            if (onEditHotel) onEditHotel(newHotel);
+    // Fetch hotels when component mounts or when user email changes
+    useEffect(() => {
+        if (userEmail) {
+            fetchHotelsByOwner();
         } else {
-            console.log('Adding new hotel:', newHotel);
-            if (onAddHotel) onAddHotel(newHotel);
+            setError('User email not found. Please log in again.');
+            setIsLoading(false);
         }
-        setShowAddForm(false);
-        setEditingHotel(null);
+    }, [userEmail]);
+
+    // Enhanced delete hotel function with better error handling
+    const handleDeleteHotel = async (hotel_id, hotel_name) => {
+        if (window.confirm(`Are you sure you want to delete "${hotel_name}"? This action cannot be undone.`)) {
+            try {
+                const token = localStorage.getItem('token');
+                
+                const response = await axios.delete(
+                    `${import.meta.env.VITE_BACKEND_URL}/api/hotel/delete_hotel/${hotel_id}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                
+                if (response.data.success) {
+                    // Remove hotel from local state
+                    setHotels(prevHotels => prevHotels.filter(hotel => hotel.hotel_id !== hotel_id));
+                    toast.success(`"${hotel_name}" deleted successfully`);
+                } else {
+                    toast.error(response.data.message || 'Failed to delete hotel');
+                }
+            } catch (error) {
+                console.error('Error deleting hotel:', error);
+                
+                let errorMessage = 'Failed to delete hotel';
+                if (error.response?.status === 403) {
+                    errorMessage = "You don't have permission to delete this hotel";
+                } else if (error.response?.status === 404) {
+                    errorMessage = "Hotel not found";
+                } else if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message;
+                }
+                
+                toast.error(errorMessage);
+            }
+        }
     };
 
-    const handleDeleteHotel = (hotelId) => {
-        if (confirm('Are you sure you want to delete this hotel?')) {
-            console.log('Deleting hotel:', hotelId);
-            if (onDeleteHotel) onDeleteHotel(hotelId);
-        }
-    };
-
-    const handleAmenityToggle = (amenity) => {
-        const updatedAmenities = newHotel.amenities.includes(amenity)
-            ? newHotel.amenities.filter(a => a !== amenity)
-            : [...newHotel.amenities, amenity];
+    const handleEditHotel = (hotel_id, hotel_name) => {
         
-        setNewHotel({ ...newHotel, amenities: updatedAmenities });
+        toast.info(`Edit functionality for "${hotel_name}" - To be implemented`);
     };
 
+    const handleViewHotelDetails = (hotel_id, hotel_name) => {
+        
+        toast.info(`Viewing details for "${hotel_name}" - To be implemented`);
+    };
+
+    // Enhanced status color function
     const getStatusColor = (status) => {
-        switch (status) {
-            case 'Active': return 'bg-green-100 text-green-700';
-            case 'Inactive': return 'bg-red-100 text-red-700';
-            case 'Maintenance': return 'bg-yellow-100 text-yellow-700';
-            default: return 'bg-gray-100 text-gray-700';
+        switch (status?.toLowerCase()) {
+            case 'approved':
+                return 'bg-green-100 text-green-700 border-green-200';
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+            case 'rejected':
+                return 'bg-red-100 text-red-700 border-red-200';
+            default:
+                return 'bg-gray-100 text-gray-700 border-gray-200';
         }
     };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-            {/* Set page title */}
-            {typeof document !== 'undefined' && (document.title = "My Hotels - TourNexus")}
+    const handleMenuItemClick = (itemName) => {
+        setActiveMenuItem(itemName);
+        
+        // If switching to My Hotels, refresh the data
+        if (itemName === 'My Hotels') {
+            fetchHotelsByOwner();
+        }
+    };
 
-            {/* Floating Background Elements */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute w-96 h-96 bg-gradient-to-r from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl top-20 left-10 animate-pulse"></div>
-                <div className="absolute w-64 h-64 bg-gradient-to-r from-purple-200/40 to-violet-200/40 rounded-full blur-2xl bottom-20 right-10 animate-pulse delay-700"></div>
+    const toggleDropdown = () => {
+        setShowDropdown(!showDropdown);
+    };
+
+    const moveToAccount = (accountType) => {
+        toast.info(`Switching to ${accountType} account...`);
+        setShowDropdown(false);
+    };
+
+    // Enhanced stats calculation with error handling
+    const calculateStats = () => {
+        if (!Array.isArray(hotels) || hotels.length === 0) {
+            return {
+                totalHotels: 0,
+                totalRooms: 0,
+                avgOccupancy: 0,
+                monthlyRevenue: 0,
+                approvedHotels: 0,
+                pendingHotels: 0,
+                rejectedHotels: 0
+            };
+        }
+
+        const totalRooms = hotels.reduce((sum, hotel) => {
+            const rooms = parseInt(hotel.total_rooms) || 0;
+            return sum + rooms;
+        }, 0);
+        
+        const approvedHotels = hotels.filter(hotel => hotel.status === 'approved').length;
+        const pendingHotels = hotels.filter(hotel => hotel.status === 'pending').length;
+        const rejectedHotels = hotels.filter(hotel => hotel.status === 'rejected').length;
+        
+        // Calculate estimated metrics (you can replace with real data)
+        const avgOccupancy = approvedHotels > 0 ? Math.floor(Math.random() * 40) + 60 : 0;
+        const monthlyRevenue = approvedHotels * 15000; // Placeholder calculation
+
+        return {
+            totalHotels: hotels.length,
+            totalRooms,
+            avgOccupancy,
+            monthlyRevenue,
+            approvedHotels,
+            pendingHotels,
+            rejectedHotels
+        };
+    };
+
+    const stats = calculateStats();
+
+    // Loading State Component
+    const LoadingState = () => (
+        <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Loading your hotels...</p>
+            <div style={{ 
+                fontSize: '14px', 
+                color: '#666', 
+                marginTop: '10px' 
+            }}>
+                Please wait while we fetch your hotel data
             </div>
+        </div>
+    );
 
-            {/* Top Navigation Bar */}
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl shadow-2xl">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        {/* Left side */}
-                        <div className="flex items-center space-x-4">
-                            <button
-                                onClick={onSidebarToggle}
-                                className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors duration-200"
-                            >
-                                {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                            </button>
-                            
-                            <button onClick={() => handleNavigation('/')} className="flex items-center space-x-2">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
-                                    <Globe className="w-6 h-6 text-white" />
-                                </div>
-                                <span className="text-xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                    TourNexus
-                                </span>
-                            </button>
-                        </div>
+    // Error State Component
+    const ErrorState = () => (
+        <div className="error-state">
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
+            <h3>Unable to Load Hotels</h3>
+            <p>{error}</p>
+            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
+                <button 
+                    className="btn btn-primary" 
+                    onClick={fetchHotelsByOwner}
+                    disabled={isLoading}
+                >
+                    {isLoading ? 'Retrying...' : 'Try Again'}
+                </button>
+                <button 
+                    className="btn btn-secondary" 
+                    onClick={() => setError(null)}
+                >
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    );
 
-                        {/* Center - Hotel Count */}
-                        <div className="hidden md:flex items-center space-x-4">
-                            <div className="flex items-center px-4 py-2 bg-blue-100 rounded-xl">
-                                <Building className="w-5 h-5 mr-2 text-blue-600" />
-                                <span className="text-blue-700 font-medium">{defaultHotels.length} Hotels</span>
-                            </div>
-                        </div>
-
-                        {/* Right side */}
-                        <div className="flex items-center space-x-4">
-                            {/* Notifications */}
-                            <div className="relative">
-                                <button
-                                    onClick={onNotificationToggle}
-                                    className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors duration-200"
-                                >
-                                    <Bell className="w-6 h-6" />
-                                    {notifications.filter(n => !n.read).length > 0 && (
-                                        <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-                                    )}
-                                </button>
-                                
-                                {notificationDropdownOpen && (
-                                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50">
-                                        <div className="p-4 border-b border-gray-100">
-                                            <h3 className="font-semibold text-gray-900">Notifications</h3>
-                                        </div>
-                                        <div className="max-h-64 overflow-y-auto">
-                                            {notifications.map((notification) => (
-                                                <div key={notification.id} className={`p-4 hover:bg-gray-50 border-b border-gray-50 ${!notification.read ? 'bg-blue-50' : ''}`}>
-                                                    <p className="text-sm text-gray-900">{notification.message}</p>
-                                                    <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Profile Dropdown */}
-                            <div className="relative">
-                                <button
-                                    onClick={onProfileToggle}
-                                    className="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200"
-                                >
-                                    <img
-                                        src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'Hotel Owner'}&background=3b82f6&color=fff`}
-                                        alt={user?.name || 'Hotel Owner'}
-                                        className="w-8 h-8 rounded-lg object-cover"
-                                    />
-                                    <span className="hidden md:block text-sm font-medium text-gray-700">{user?.name || 'Hotel Owner'}</span>
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                </button>
-
-                                {profileDropdownOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50">
-                                        <div className="p-2">
-                                            <button 
-                                                onClick={() => handleNavigation('/profile')} 
-                                                className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
-                                            >
-                                                <User className="w-4 h-4 mr-3" />
-                                                Profile
-                                            </button>
-                                            <button 
-                                                onClick={() => handleNavigation('/settings')} 
-                                                className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
-                                            >
-                                                <Settings className="w-4 h-4 mr-3" />
-                                                Settings
-                                            </button>
-                                            <button
-                                                onClick={onLogout}
-                                                className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-xl"
-                                            >
-                                                <LogOut className="w-4 h-4 mr-3" />
-                                                Sign out
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+    // Enhanced Hotel Card Component
+    const HotelCard = ({ hotel }) => (
+        <div key={hotel.hotel_id} className="hotel-card">
+            {/* Hotel Image */}
+            <div className="hotel-image">
+                {hotel.hasImages ? (
+                    <img
+                        src={hotel.images[0]}
+                        alt={hotel.hotel_name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                        }}
+                    />
+                ) : null}
+                <div 
+                    className="image-placeholder"
+                    style={{ 
+                        display: hotel.hasImages ? 'none' : 'flex' 
+                    }}
+                >
+                    <Hotel className="w-12 h-12 text-gray-400" />
                 </div>
-            </nav>
-
-            <div className="flex pt-16">
-                {/* Sidebar */}
-                <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white/80 backdrop-blur-md shadow-2xl transform transition-transform duration-300 ${
-                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                } md:translate-x-0 md:static md:inset-0`}>
-                    <div className="flex flex-col h-full pt-4">
-                        <div className="flex-1 px-4 space-y-2">
-                            {sidebarItems.map((item) => (
-                                <button
-                                    key={item.name}
-                                    onClick={() => handleNavigation(item.href)}
-                                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${
-                                        item.current
-                                            ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
-                                            : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700'
-                                    }`}
-                                >
-                                    <div className="flex items-center">
-                                        <item.icon className={`w-5 h-5 mr-3 ${
-                                            item.current ? 'text-white' : 'text-gray-500 group-hover:text-blue-600'
-                                        }`} />
-                                        {item.name}
-                                    </div>
-                                    {item.current && <ArrowRight className="w-4 h-4 ml-auto" />}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Owner Summary */}
-                        <div className="p-4 border-t border-gray-200">
-                            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl p-4 text-white">
-                                <div className="flex items-center mb-2">
-                                    <Building className="w-5 h-5 mr-2" />
-                                    <span className="font-semibold">Hotel Portfolio</span>
-                                </div>
-                                <p className="text-xs text-blue-100">{defaultHotels.length} Properties</p>
-                                <p className="text-xs text-blue-100">Multiple Locations</p>
-                            </div>
-                        </div>
-                    </div>
+                
+                {/* Status overlay */}
+                <div style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    padding: '4px 8px',
+                    borderRadius: '12px',
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    backgroundColor: hotel.status === 'approved' ? 'rgba(34, 197, 94, 0.9)' : 
+                                   hotel.status === 'pending' ? 'rgba(251, 191, 36, 0.9)' : 
+                                   'rgba(239, 68, 68, 0.9)',
+                    color: 'white',
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    {hotel.status}
                 </div>
-
-                {/* Main Content */}
-                <div className="flex-1 md:ml-0 p-6 relative">
-                    {/* Header Section */}
-                    <div className="mb-8">
-                        <div className="flex items-center justify-between mb-6">
-                            <div>
-                                <h1 className="text-3xl font-bold text-gray-900">My Hotels</h1>
-                                <p className="text-gray-600">Manage your hotel properties and portfolio</p>
-                            </div>
-                            <button 
-                                // onClick={handleAddHotel}
-                                className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center"
-                            >
-                                <Plus className="w-5 h-5 mr-2" />
-                                <Link to="/addhotel" className="text-emerald-600">
-                                Add New Hotel
-                                </Link>
-                            </button>
-                        </div>
+            </div>
+            
+            {/* Hotel Info */}
+            <div className="hotel-info">
+                <div className="hotel-header">
+                    <h3 title={hotel.hotel_name}>{hotel.hotel_name}</h3>
+                    <span className={`status-badge ${getStatusColor(hotel.status)}`}>
+                        {hotel.status}
+                    </span>
+                </div>
+                
+                <div className="hotel-details">
+                    <div className="detail-item">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        <span title={hotel.city}>{hotel.city}</span>
                     </div>
-
-                    {/* Hotels Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 mb-8">
-                        {defaultHotels.map((hotel) => (
-                            <div key={hotel.id} className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 overflow-hidden hover:shadow-2xl transition-all duration-300">
-                                {/* Hotel Image */}
-                                <div className="h-48 overflow-hidden">
-                                    <img
-                                        src={hotel.images[0]}
-                                        alt={hotel.name}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                
-                                {/* Hotel Info */}
-                                <div className="p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-xl font-bold text-gray-900">{hotel.name}</h3>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(hotel.status)}`}>
-                                            {hotel.status}
-                                        </span>
-                                    </div>
-                                    
-                                    <div className="space-y-2 mb-4">
-                                        <div className="flex items-center text-gray-600">
-                                            <MapPin className="w-4 h-4 mr-2" />
-                                            <span className="text-sm">{hotel.location}</span>
-                                        </div>
-                                        <div className="flex items-center text-gray-600">
-                                            <Bed className="w-4 h-4 mr-2" />
-                                            <span className="text-sm">{hotel.total_rooms} rooms</span>
-                                        </div>
-                                        <div className="flex items-center text-gray-600">
-                                            <Star className="w-4 h-4 mr-2" />
-                                            <span className="text-sm">{hotel.rating} rating</span>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-gray-600 text-sm mb-4">{hotel.description}</p>
-
-                                    {/* Stats */}
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div className="bg-green-50 rounded-lg p-3 text-center">
-                                            <p className="text-green-600 font-semibold">{hotel.occupancy_rate}%</p>
-                                            <p className="text-green-600 text-xs">Occupancy</p>
-                                        </div>
-                                        <div className="bg-blue-50 rounded-lg p-3 text-center">
-                                            <p className="text-blue-600 font-semibold">${hotel.monthly_revenue}</p>
-                                            <p className="text-blue-600 text-xs">Monthly</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Amenities */}
-                                    <div className="mb-4">
-                                        <div className="flex flex-wrap gap-1">
-                                            {hotel.amenities.slice(0, 4).map((amenity, index) => (
-                                                <span key={index} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                                                    {amenity}
-                                                </span>
-                                            ))}
-                                            {hotel.amenities.length > 4 && (
-                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                                                    +{hotel.amenities.length - 4} more
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className="flex space-x-2">
-                                        <button
-                                            onClick={() => onSelectHotel && onSelectHotel(hotel.id)}
-                                            className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center"
-                                        >
-                                            <Activity className="w-4 h-4 mr-2" />
-                                            Manage
-                                        </button>
-                                        <button
-                                            onClick={() => handleEditHotel(hotel)}
-                                            className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors duration-200"
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteHotel(hotel.id)}
-                                            className="bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors duration-200"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="detail-item">
+                        <Bed className="w-4 h-4 mr-2" />
+                        <span>{hotel.total_rooms} rooms</span>
                     </div>
-
-                    {/* Add/Edit Hotel Modal */}
-                    {showAddForm && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                                <div className="p-6 border-b border-gray-200">
-                                    <h3 className="text-xl font-bold text-gray-900">
-                                        {editingHotel ? 'Edit Hotel' : 'Add New Hotel'}
-                                    </h3>
-                                </div>
-                                
-                                <div className="p-6 space-y-4">
-                                    {/* Basic Info */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Hotel Name</label>
-                                            <input
-                                                type="text"
-                                                value={newHotel.name}
-                                                onChange={(e) => setNewHotel({...newHotel, name: e.target.value})}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="Enter hotel name"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                                            <input
-                                                type="text"
-                                                value={newHotel.location}
-                                                onChange={(e) => setNewHotel({...newHotel, location: e.target.value})}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="City, Country"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                                        <textarea
-                                            value={newHotel.description}
-                                            onChange={(e) => setNewHotel({...newHotel, description: e.target.value})}
-                                            rows={3}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Describe your hotel"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                                        <input
-                                            type="text"
-                                            value={newHotel.address}
-                                            onChange={(e) => setNewHotel({...newHotel, address: e.target.value})}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Full address"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                                            <input
-                                                type="tel"
-                                                value={newHotel.phone}
-                                                onChange={(e) => setNewHotel({...newHotel, phone: e.target.value})}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="+94 11 xxx xxxx"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                            <input
-                                                type="email"
-                                                value={newHotel.email}
-                                                onChange={(e) => setNewHotel({...newHotel, email: e.target.value})}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="info@hotel.com"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Total Rooms</label>
-                                            <input
-                                                type="number"
-                                                value={newHotel.total_rooms}
-                                                onChange={(e) => setNewHotel({...newHotel, total_rooms: e.target.value})}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="50"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Amenities */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Amenities</label>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                            {amenityOptions.map((amenity) => (
-                                                <label key={amenity} className="flex items-center space-x-2 cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={newHotel.amenities.includes(amenity)}
-                                                        onChange={() => handleAmenityToggle(amenity)}
-                                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                    />
-                                                    <span className="text-sm text-gray-700">{amenity}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-6 border-t border-gray-200 flex space-x-4">
-                                    <button
-                                        onClick={() => setShowAddForm(false)}
-                                        className="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors duration-200"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleSaveHotel}
-                                        className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center"
-                                    >
-                                        <Save className="w-5 h-5 mr-2" />
-                                        {editingHotel ? 'Update Hotel' : 'Add Hotel'}
-                                    </button>
-                                </div>
-                            </div>
+                    <div className="detail-item">
+                        <span className="hotel-id">ID: {hotel.hotel_id}</span>
+                    </div>
+                    {hotel.registrationDate && (
+                        <div className="detail-item">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            <span>Registered: {hotel.registrationDate}</span>
                         </div>
                     )}
                 </div>
+
+                {hotel.description && (
+                    <p className="hotel-description" title={hotel.description}>
+                        {hotel.description.length > 100 
+                            ? hotel.description.substring(0, 100) + '...'
+                            : hotel.description
+                        }
+                    </p>
+                )}
+
+                {/* Room Types */}
+                {hotel.room_types && hotel.room_types.length > 0 && (
+                    <div className="room-types">
+                        <h4>Room Types ({hotel.room_types.length}):</h4>
+                        <div className="room-types-list">
+                            {hotel.room_types.slice(0, 3).map((room, index) => (
+                                <span key={index} className="room-type-tag" title={`${room.type}: LKR ${room.price}`}>
+                                    {room.type}: LKR {room.price.toLocaleString()}
+                                </span>
+                            ))}
+                            {hotel.room_types.length > 3 && (
+                                <span className="room-type-tag" style={{ background: '#f3f4f6', color: '#6b7280' }}>
+                                    +{hotel.room_types.length - 3} more
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Contact Info */}
+                <div className="contact-info">
+                    {hotel.contact_number && (
+                        <div className="detail-item">
+                            <span>📞 {hotel.contact_number}</span>
+                        </div>
+                    )}
+                    {hotel.parking_available && (
+                        <div className="detail-item">
+                            <Car className="w-4 h-4 mr-2" />
+                            <span>Parking Available</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Actions */}
+                <div className="hotel-actions">
+                    <button 
+                        className="action-btn primary"
+                        onClick={() => handleViewHotelDetails(hotel.hotel_id, hotel.hotel_name)}
+                        title={`View details for ${hotel.hotel_name}`}
+                    >
+                        View Details
+                    </button>
+                    <button 
+                        className="action-btn secondary"
+                        onClick={() => handleEditHotel(hotel.hotel_id, hotel.hotel_name)}
+                        title={`Edit ${hotel.hotel_name}`}
+                    >
+                        <Edit className="w-4 h-4" />
+                    </button>
+                    <button 
+                        className="action-btn danger"
+                        onClick={() => handleDeleteHotel(hotel.hotel_id, hotel.hotel_name)}
+                        title={`Delete ${hotel.hotel_name}`}
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
+    // Content rendering function with enhanced error handling
+    const renderContent = () => {
+        if (activeMenuItem === 'Dashboard') {
+            return (
+                <>
+                    <div className="welcome-section">
+                        <h1>Welcome back, Hotel Owner!</h1>
+                        <p>Manage your hotel properties and grow your business</p>
+                        
+                        <div className="action-buttons">
+                            <button className="btn btn-primary" onClick={() => handleMenuItemClick('My Hotels')}>
+                                View My Hotels
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => handleMenuItemClick('Reports')}>
+                                View Reports
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="stats-grid">
+                        <div className="stat-card">
+                            <div className="number">{stats.totalHotels}</div>
+                            <div className="label">Total Hotels</div>
+                            <div className="change positive">{stats.approvedHotels} Approved</div>
+                        </div>
+                        
+                        <div className="stat-card">
+                            <div className="number">{stats.totalRooms}</div>
+                            <div className="label">Total Rooms</div>
+                            <div className="change positive">Across all properties</div>
+                        </div>
+                        
+                        <div className="stat-card">
+                            <div className="number">{stats.avgOccupancy}%</div>
+                            <div className="label">Avg Occupancy</div>
+                            <div className="change">This month</div>
+                        </div>
+                        
+                        <div className="stat-card">
+                            <div className="number">LKR {stats.monthlyRevenue.toLocaleString()}</div>
+                            <div className="label">Monthly Revenue</div>
+                            <div className="change positive">Estimated earnings</div>
+                        </div>
+                    </div>
+
+                    {/* Enhanced Quick Actions with real data */}
+                    <div className="quick-actions">
+                        <h2>Quick Actions</h2>
+                        
+                        <div className="actions-grid">
+                            <div className="action-card" onClick={() => handleMenuItemClick('My Hotels')}>
+                                <h3>🏨 Manage Hotels ({stats.totalHotels})</h3>
+                                <p>View and edit your properties</p>
+                                {stats.pendingHotels > 0 && (
+                                    <div style={{ color: '#f59e0b', fontSize: '12px', marginTop: '5px' }}>
+                                        {stats.pendingHotels} pending approval
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="action-card" onClick={() => handleMenuItemClick('Bookings')}>
+                                <h3>📅 View Bookings</h3>
+                                <p>Check recent reservations</p>
+                            </div>
+                            
+                            <div className="action-card">
+                                <Link to="/addhotel" style={{ textDecoration: 'none', color: 'inherit' }}>
+                                    <h3>➕ Add New Hotel</h3>
+                                    <p>Expand your portfolio</p>
+                                </Link>
+                            </div>
+                            
+                            <div className="action-card" onClick={() => handleMenuItemClick('Reports')}>
+                                <h3>📊 View Reports</h3>
+                                <p>Analytics and insights</p>
+                            </div>
+                            
+                            <div className="action-card" onClick={() => handleMenuItemClick('Messages')}>
+                                <h3>💬 Messages</h3>
+                                <p>Guest communications</p>
+                            </div>
+                            
+                            <div className="action-card" onClick={() => handleMenuItemClick('Settings')}>
+                                <h3>⚙️ Settings</h3>
+                                <p>Account preferences</p>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            );
+        }
+        
+        if (activeMenuItem === 'My Hotels') {
+            return (
+                <div className="hotels-page">
+                    {/* Enhanced Header Section */}
+                    <div className="page-header">
+                        <div>
+                            <h1>My Hotels</h1>
+                            <p>Manage your hotel properties and portfolio</p>
+                            {hotels.length > 0 && (
+                                <div className="hotel-summary">
+                                    <span>Total: {stats.totalHotels} hotels | </span>
+                                    <span>Approved: {stats.approvedHotels} | </span>
+                                    <span>Pending: {stats.pendingHotels} | </span>
+                                    <span>Rejected: {stats.rejectedHotels}</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="header-actions">
+                            <button 
+                                className="btn btn-secondary"
+                                onClick={fetchHotelsByOwner}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Refreshing...' : 'Refresh'}
+                            </button>
+                            <Link 
+                                to="/addhotel"
+                                className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center text-decoration-none"
+                            >
+                                <Plus className="w-5 h-5 mr-2" />
+                                Add New Hotel
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* Loading State */}
+                    {isLoading && <LoadingState />}
+
+                    {/* Error State */}
+                    {error && !isLoading && <ErrorState />}
+
+                    {/* Hotels Grid */}
+                    {!isLoading && !error && (
+                        <div className="hotels-grid">
+                            {hotels.length === 0 ? (
+                                <div className="no-hotels">
+                                    <Building className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                    <h3>No hotels found</h3>
+                                    <p>Get started by adding your first hotel property</p>
+                                    <Link to="/addhotel" className="btn btn-primary" style={{ marginTop: '20px' }}>
+                                        Add Your First Hotel
+                                    </Link>
+                                </div>
+                            ) : (
+                                hotels.map((hotel) => <HotelCard key={hotel.hotel_id} hotel={hotel} />)
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        
+        
+        if (activeMenuItem === 'Bookings') {
+            return (
+                <div>
+                    <h1>Bookings Management</h1>
+                    <p>View and manage all hotel reservations</p>
+                    
+                </div>
+            );
+        }
+        
+        
+        return (
+            <div>
+                <h1>{activeMenuItem}</h1>
+                <p>Content for {activeMenuItem} coming soon...</p>
+                
+                <div className="placeholder-content">
+                    <div className="placeholder-card">
+                        <h3>Feature Under Development</h3>
+                        <p>This section is currently being developed. Check back soon for updates!</p>
+                        <button className="btn btn-primary" onClick={() => handleMenuItemClick('Dashboard')}>
+                            Back to Dashboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div>
+            
+            <style jsx>{`
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f5f5f5;
+                    color: #333;
+                }
+                
+                .main-container {
+                    display: flex;
+                    min-height: 100vh;
+                }
+                
+                .header {
+                    background: white;
+                    padding: 15px 20px;
+                    border-bottom: 1px solid #ddd;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    z-index: 100;
+                }
+                
+                .logo {
+                    font-size: 20px;
+                    font-weight: bold;
+                    color: #3b82f6;
+                }
+                
+                .search-bar {
+                    flex: 1;
+                    max-width: 400px;
+                    margin: 0 20px;
+                }
+                
+                .search-bar input {
+                    width: 100%;
+                    padding: 10px 15px;
+                    border: 1px solid #ddd;
+                    border-radius: 25px;
+                    background-color: #f8f9fa;
+                }
+                
+                .user-section {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                }
+                
+                .user-profile {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 5px 10px;
+                    border: 1px solid #ddd;
+                    background: white;
+                    cursor: pointer;
+                    position: relative;
+                }
+                
+                .user-profile:hover {
+                    background-color: #f8f9fa;
+                }
+                
+                .dropdown-menu {
+                    position: absolute;
+                    top: 100%;
+                    right: 0;
+                    background: white;
+                    border: 1px solid #ddd;
+                    border-top: none;
+                    min-width: 200px;
+                    z-index: 1000;
+                    display: none;
+                }
+                
+                .dropdown-menu.show {
+                    display: block;
+                }
+                
+                .dropdown-header {
+                    padding: 12px 16px;
+                    font-weight: bold;
+                    border-bottom: 1px solid #eee;
+                    color: #333;
+                    background-color: #f8f9fa;
+                }
+                
+                .dropdown-item {
+                    padding: 12px 16px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #f0f0f0;
+                    transition: background-color 0.2s;
+                }
+                
+                .dropdown-item:hover {
+                    background-color: #f8f9fa;
+                }
+                
+                .sidebar {
+                    width: 250px;
+                    background: white;
+                    border-right: 1px solid #ddd;
+                    margin-top: 70px;
+                    position: fixed;
+                    height: calc(100vh - 70px);
+                    overflow-y: auto;
+                }
+                
+                .sidebar-item {
+                    padding: 15px 20px;
+                    border-bottom: 1px solid #f0f0f0;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+                
+                .sidebar-item:hover {
+                    background-color: #f8f9fa;
+                }
+                
+                .sidebar-item.active {
+                    background-color: #3b82f6;
+                    color: white;
+                }
+                
+                .main-content {
+                    flex: 1;
+                    margin-left: 250px;
+                    margin-top: 70px;
+                    padding: 30px;
+                }
+                
+                .welcome-section {
+                    background: #3b82f6;
+                    color: white;
+                    padding: 40px;
+                    margin-bottom: 30px;
+                    border-radius: 8px;
+                }
+                
+                .welcome-section h1 {
+                    font-size: 32px;
+                    margin-bottom: 10px;
+                }
+                
+                .welcome-section p {
+                    margin-bottom: 25px;
+                    opacity: 0.9;
+                }
+                
+                .action-buttons {
+                    display: flex;
+                    gap: 15px;
+                }
+                
+                .btn {
+                    padding: 12px 24px;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: all 0.2s;
+                    border-radius: 6px;
+                    text-decoration: none;
+                    display: inline-block;
+                }
+                
+                .btn:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+                
+                .btn-primary {
+                    background: white;
+                    color: #3b82f6;
+                }
+                
+                .btn-secondary {
+                    background: transparent;
+                    color: white;
+                    border: 1px solid white;
+                }
+                
+                .btn:hover:not(:disabled) {
+                    opacity: 0.8;
+                    transform: translateY(-1px);
+                }
+                
+                .stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 20px;
+                    margin-bottom: 40px;
+                }
+                
+                .stat-card {
+                    background: white;
+                    padding: 25px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    text-align: center;
+                    transition: transform 0.2s ease;
+                }
+                
+                .stat-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+                }
+                
+                .stat-card .number {
+                    font-size: 28px;
+                    font-weight: bold;
+                    margin-bottom: 8px;
+                    color: #3b82f6;
+                }
+                
+                .stat-card .label {
+                    color: #666;
+                    margin-bottom: 5px;
+                    font-weight: 500;
+                }
+                
+                .stat-card .change {
+                    font-size: 12px;
+                    color: #888;
+                }
+                
+                .change.positive {
+                    color: #27ae60;
+                }
+                
+                .quick-actions {
+                    background: white;
+                    padding: 25px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                
+                .quick-actions h2 {
+                    margin-bottom: 25px;
+                    color: #333;
+                }
+                
+                .actions-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 20px;
+                }
+                
+                .action-card {
+                    padding: 30px 20px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    text-align: center;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .action-card:hover {
+                    background-color: #f8f9fa;
+                    border-color: #3b82f6;
+                    transform: translateY(-2px);
+                }
+                
+                .action-card h3 {
+                    margin-bottom: 10px;
+                    font-size: 16px;
+                    color: #333;
+                }
+                
+                .action-card p {
+                    font-size: 14px;
+                    color: #666;
+                }
+
+                /* Enhanced Hotels Page Specific Styles */
+                .hotels-page {
+                    background: #f5f5f5;
+                }
+
+                .page-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 30px;
+                    background: white;
+                    padding: 30px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+
+                .page-header h1 {
+                    font-size: 28px;
+                    margin-bottom: 5px;
+                    color: #333;
+                }
+
+                .page-header p {
+                    color: #666;
+                    margin-bottom: 10px;
+                }
+
+                .hotel-summary {
+                    font-size: 14px;
+                    color: #666;
+                    margin-top: 10px;
+                }
+
+                .header-actions {
+                    display: flex;
+                    gap: 15px;
+                    align-items: center;
+                }
+
+                .loading-state, .error-state {
+                    text-align: center;
+                    padding: 60px;
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+
+                .spinner {
+                    width: 40px;
+                    height: 40px;
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #3b82f6;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 20px;
+                }
+
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+
+                .error-state h3 {
+                    color: #e74c3c;
+                    margin-bottom: 10px;
+                }
+
+                .hotels-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+                    gap: 25px;
+                }
+
+                .no-hotels {
+                    grid-column: 1 / -1;
+                    text-align: center;
+                    padding: 60px;
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+
+                .no-hotels h3 {
+                    margin-bottom: 10px;
+                    color: #333;
+                }
+
+                .no-hotels p {
+                    margin-bottom: 20px;
+                    color: #666;
+                }
+
+                .hotel-card {
+                    background: white;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    transition: all 0.3s ease;
+                    border: 1px solid #e5e7eb;
+                }
+
+                .hotel-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+                }
+
+                .hotel-image {
+                    height: 220px;
+                    overflow: hidden;
+                    background: #f3f4f6;
+                    position: relative;
+                }
+
+                .image-placeholder {
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+                }
+
+                .hotel-info {
+                    padding: 24px;
+                }
+
+                .hotel-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 16px;
+                }
+
+                .hotel-header h3 {
+                    font-size: 18px;
+                    color: #1f2937;
+                    font-weight: 600;
+                    margin: 0;
+                    flex: 1;
+                    margin-right: 12px;
+                }
+
+                .status-badge {
+                    padding: 6px 12px;
+                    border-radius: 20px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    border: 1px solid;
+                    white-space: nowrap;
+                }
+
+                .hotel-details {
+                    margin-bottom: 16px;
+                    space-y: 8px;
+                }
+
+                .detail-item {
+                    display: flex;
+                    align-items: center;
+                    color: #6b7280;
+                    font-size: 14px;
+                    margin-bottom: 6px;
+                }
+
+                .hotel-id {
+                    font-family: 'Monaco', 'Menlo', monospace;
+                    background: #f3f4f6;
+                    padding: 2px 8px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    color: #4b5563;
+                    font-weight: 500;
+                }
+
+                .hotel-description {
+                    color: #6b7280;
+                    font-size: 14px;
+                    margin-bottom: 16px;
+                    line-height: 1.5;
+                }
+
+                .room-types {
+                    margin-bottom: 16px;
+                }
+
+                .room-types h4 {
+                    font-size: 14px;
+                    color: #374151;
+                    margin-bottom: 8px;
+                    font-weight: 600;
+                }
+
+                .room-types-list {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+
+                .room-type-tag {
+                    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                    color: #1e40af;
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: 500;
+                    border: 1px solid #93c5fd;
+                }
+
+                .contact-info {
+                    margin-bottom: 20px;
+                    padding-top: 12px;
+                    border-top: 1px solid #f3f4f6;
+                }
+
+                .hotel-actions {
+                    display: flex;
+                    gap: 8px;
+                }
+
+                .action-btn {
+                    padding: 10px 16px;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 13px;
+                    font-weight: 500;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .action-btn.primary {
+                    flex: 1;
+                    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                    color: white;
+                }
+
+                .action-btn.secondary {
+                    background: #f9fafb;
+                    color: #6b7280;
+                    padding: 10px;
+                    border: 1px solid #e5e7eb;
+                }
+
+                .action-btn.danger {
+                    background: #fef2f2;
+                    color: #dc2626;
+                    padding: 10px;
+                    border: 1px solid #fecaca;
+                }
+
+                .action-btn:hover {
+                    transform: translateY(-1px);
+                }
+
+                .action-btn.primary:hover {
+                    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+                }
+
+                .action-btn.secondary:hover {
+                    background: #f3f4f6;
+                    color: #374151;
+                }
+
+                .action-btn.danger:hover {
+                    background: #fee2e2;
+                    color: #b91c1c;
+                }
+
+                .action-btn:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+
+                .placeholder-content {
+                    margin-top: 30px;
+                }
+
+                .placeholder-card {
+                    background: white;
+                    padding: 40px;
+                    text-align: center;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+
+                .placeholder-card h3 {
+                    margin-bottom: 15px;
+                    color: #333;
+                }
+
+                .placeholder-card p {
+                    margin-bottom: 20px;
+                    color: #666;
+                }
+
+                .text-decoration-none {
+                    text-decoration: none;
+                }
+
+                /* Enhanced Responsive Design */
+                @media (max-width: 1024px) {
+                    .stats-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                    
+                    .actions-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+
+                    .hotels-grid {
+                        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .sidebar {
+                        transform: translateX(-100%);
+                        transition: transform 0.3s ease;
+                    }
+                    
+                    .main-content {
+                        margin-left: 0;
+                        padding: 20px;
+                    }
+                    
+                    .stats-grid {
+                        grid-template-columns: 1fr;
+                        gap: 15px;
+                    }
+                    
+                    .actions-grid {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .page-header {
+                        flex-direction: column;
+                        gap: 20px;
+                        text-align: center;
+                    }
+
+                    .header-actions {
+                        flex-direction: column;
+                        width: 100%;
+                    }
+
+                    .hotels-grid {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .search-bar {
+                        margin: 10px 0;
+                        max-width: none;
+                    }
+
+                    .user-section {
+                        gap: 10px;
+                    }
+
+                    .hotel-actions {
+                        flex-direction: column;
+                    }
+
+                    .action-btn.primary {
+                        order: 1;
+                    }
+
+                    .action-btn.secondary,
+                    .action-btn.danger {
+                        flex: 1;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .header {
+                        padding: 10px 15px;
+                    }
+
+                    .main-content {
+                        padding: 15px;
+                    }
+
+                    .welcome-section {
+                        padding: 25px;
+                    }
+
+                    .welcome-section h1 {
+                        font-size: 24px;
+                    }
+
+                    .page-header {
+                        padding: 20px;
+                    }
+
+                    .page-header h1 {
+                        font-size: 22px;
+                    }
+
+                    .hotel-info {
+                        padding: 16px;
+                    }
+
+                    .hotel-header h3 {
+                        font-size: 16px;
+                    }
+                }
+
+                /* Loading animation enhancement */
+                .loading-state p {
+                    color: #6b7280;
+                    font-weight: 500;
+                }
+
+                /* Error state enhancements */
+                .error-state {
+                    border: 1px solid #fee2e2;
+                    background: linear-gradient(135deg, #fefefe 0%, #fef2f2 100%);
+                }
+
+                /* Improved hover effects */
+                .hotel-card:hover .hotel-image img {
+                    transform: scale(1.05);
+                    transition: transform 0.3s ease;
+                }
+
+                /* Status badge animations */
+                .status-badge {
+                    transition: all 0.2s ease;
+                }
+
+                /* Room type tag hover effects */
+                .room-type-tag:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
+                }
+            `}</style>
+
+            <div className="header">
+                <div className="logo">TourNexus</div>
+                
+                <div className="search-bar">
+                    <input type="text" placeholder="Search hotels, bookings, reports..." />
+                </div>
+                
+                <div className="user-section">
+                    <div className="user-profile" onClick={toggleDropdown}>
+                        <span style={{marginLeft: '5px'}}>🔄Change Account▼</span>
+                        
+                        <div className={`dropdown-menu ${showDropdown ? 'show' : ''}`}>
+                            <div className="dropdown-header">Switch Account</div>
+                            <div className="dropdown-item" onClick={() => moveToAccount('Tourist')}>
+                                Tourist
+                            </div>
+                            <div className="dropdown-item" onClick={() => moveToAccount('Guide')}>
+                                Guide
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Mobile Overlay */}
-            {sidebarOpen && (
-                <div 
-                    className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-                    onClick={onSidebarToggle}
-                ></div>
-            )}
+            <div className="main-container">
+                <div className="sidebar">
+                    {sidebarItems.map((item) => (
+                        <div 
+                            key={item.name}
+                            className={`sidebar-item ${activeMenuItem === item.name ? 'active' : ''}`} 
+                            onClick={() => handleMenuItemClick(item.name)}
+                        >
+                            <span>{item.emoji}</span>
+                            <span>{item.name}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="main-content">
+                    {renderContent()}
+                </div>
+            </div>
         </div>
     );
 }
 
-// Container Component that manages state
-function HotelOwnerMultipleHotelsContainer() {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-    const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
-
-    // Mock user data - replace with your actual data
-    const mockUser = {
-        name: "Alex Johnson",
-        avatar: null
-    };
-
-    const handleSidebarToggle = () => {
-        setSidebarOpen(!sidebarOpen);
-    };
-
-    const handleProfileToggle = () => {
-        setProfileDropdownOpen(!profileDropdownOpen);
-        // Close other dropdowns
-        setNotificationDropdownOpen(false);
-    };
-
-    const handleNotificationToggle = () => {
-        setNotificationDropdownOpen(!notificationDropdownOpen);
-        // Close other dropdowns
-        setProfileDropdownOpen(false);
-    };
-
-    const handleLogout = () => {
-        console.log("Logging out...");
-        alert("Logout clicked!");
-    };
-
-    const handleAddHotel = (hotelData) => {
-        console.log("Adding new hotel:", hotelData);
-        alert(`New hotel "${hotelData.name}" added successfully!`);
-        // Here you would make an API call to your Node.js backend
-        // Example: await fetch('/api/hotels', { method: 'POST', body: JSON.stringify(hotelData) })
-    };
-
-    const handleEditHotel = (hotelData) => {
-        console.log("Updating hotel:", hotelData);
-        alert(`Hotel "${hotelData.name}" updated successfully!`);
-        // Here you would make an API call to your Node.js backend
-        // Example: await fetch(`/api/hotels/${hotelData.id}`, { method: 'PUT', body: JSON.stringify(hotelData) })
-    };
-
-    const handleDeleteHotel = (hotelId) => {
-        console.log("Deleting hotel:", hotelId);
-        alert(`Hotel deleted successfully!`);
-        // Here you would make an API call to your Node.js backend
-        // Example: await fetch(`/api/hotels/${hotelId}`, { method: 'DELETE' })
-    };
-
-    const handleSelectHotel = (hotelId) => {
-        console.log("Managing hotel:", hotelId);
-        alert(`Redirecting to hotel ${hotelId} management dashboard!`);
-        // Here you would navigate to the specific hotel's dashboard
-        // Example: navigate(`/hotel-management/hotels/${hotelId}/dashboard`)
-    };
-
-    return (
-        <HotelOwnerMultipleHotels
-            user={mockUser}
-            onSidebarToggle={handleSidebarToggle}
-            onProfileToggle={handleProfileToggle}
-            onNotificationToggle={handleNotificationToggle}
-            onLogout={handleLogout}
-            onAddHotel={handleAddHotel}
-            onEditHotel={handleEditHotel}
-            onDeleteHotel={handleDeleteHotel}
-            onSelectHotel={handleSelectHotel}
-            sidebarOpen={sidebarOpen}
-            profileDropdownOpen={profileDropdownOpen}
-            notificationDropdownOpen={notificationDropdownOpen}
-        />
-    );
-}
-
-export default HotelOwnerMultipleHotelsContainer;
+export default HotelOwnerDashboard;

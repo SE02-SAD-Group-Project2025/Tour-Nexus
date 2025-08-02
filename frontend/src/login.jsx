@@ -39,6 +39,7 @@ export default function LoginDesign() {
             })
             toast.success("Login successful!");
             localStorage.setItem("token", response.data.token);
+            localStorage.setItem("email", email);
             console.log(response.data.role);
 
             if (response.data.role === "Tourist") {
