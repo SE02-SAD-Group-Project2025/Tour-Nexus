@@ -8,6 +8,7 @@ guideRouter.post('/addguide' , addGuide);
 guideRouter.put("/approve_guide/:guide_id",approveGuide);
 guideRouter.put("/reject_guide/:guide_id",rejectGuide);
 guideRouter.get("/view_pending_guides",getPendingGuides);
+guideRouter.get("/view_all_guides",view_all_guides);
 
 
 
