@@ -66,3 +66,27 @@ export async function addGuide(req, res) {
         });
     }
 }
+export async function approveGuide(req, res) {
+    if (!isAdmin(req)) {
+        return res.status(403).json({
+            success: false,
+            message: "Unauthorized",
+        });
+    }
+    try {
+        await Guide.updateOne(
+            { guide_id: req.params.guide_id },
+            { status: "approved" }
+        );
+        res.status(200).json({
+            success: true,
+            message: "Guide approved successfully"
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error approving guide",
+            error: error.message,
+        });
+    }
+}
