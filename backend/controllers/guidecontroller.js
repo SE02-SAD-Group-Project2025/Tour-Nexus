@@ -125,3 +125,14 @@ export async function getPendingGuides(req, res) {
         });
     }
 }
+export async function view_all_guides(req, res) {
+    try {
+        const viewGuides = await Guide.find();
+        res.json(viewGuides);
+    } catch (err) {
+        res.status(500).json({
+            message: "Failed to get guides",
+            error: err.message,
+        });
+    }
+}
