@@ -114,3 +114,14 @@ export async function rejectGuide(req, res) {
         });
     }
 }
+export async function getPendingGuides(req, res) {
+    try {
+        const pendingGuides = await Guide.find({ status: "pending" });
+        res.json(pendingGuides);
+    } catch (err) {
+        res.status(500).json({
+            message: "Failed to get pending guides",
+            error: err.message,
+        });
+    }
+}
