@@ -5,7 +5,7 @@ import { addGuide, approveGuide, getApprovedGuides, getPendingGuides, rejectGuid
 const guideRouter = express.Router();
 
 guideRouter.post('/addguide' , addGuide);
-
+guideRouter.put("/approve_guide/:guide_id",approveGuide);
 
 
 
