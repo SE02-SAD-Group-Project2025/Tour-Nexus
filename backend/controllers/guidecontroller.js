@@ -136,3 +136,16 @@ export async function view_all_guides(req, res) {
         });
     }
 }
+export async function getGuideById(req, res) {
+    try {
+        const guide_id = req.params.guide_id;
+
+        const guide = await Guide.findOne({ guide_id: guide_id });
+
+        res.json(guide);
+    } catch (error) {
+        res.status(500).json({
+            error,
+        })
+    }
+}
