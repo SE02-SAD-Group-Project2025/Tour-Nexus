@@ -12,6 +12,7 @@ import HotelOwnerMultipleHotelsContainer from './hotel-owner/hotel_ownerdashboar
 import { Toaster } from 'react-hot-toast';
 import TouristPersonalDetails from './tourist/updateprofile';
 import AddGuideForm from './guide/guide_register';
+import GuideBookingForm from './tourist/guider_booking_form';
 
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
         <Route path="/admin/usermanagement" element={<UserManagement />}></Route>
         <Route path="/admin/pendingapprovels" element={<PendingApprovalsPage />}></Route>
         <Route path="/admin/pendingapprovels/:hotel_id" element={<RequestedHotelDetails />}></Route>
+        <Route path="/tourist/guider_booking_form" element={<GuideBookingForm />}></Route>
 
       </Routes>
     </BrowserRouter>
