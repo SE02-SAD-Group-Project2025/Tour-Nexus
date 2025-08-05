@@ -149,3 +149,31 @@ export async function getGuideById(req, res) {
         })
     }
 }
+export async function getGuideStats(req, res) {
+    try {
+        const stats = await Guide.aggregate([
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const result = { pending: 0, approved: 0, rejected: 0 };
+        
+        stats.forEach(stat => {
+            if (result.hasOwnProperty(stat._id)) {
+                result[stat._id] = stat.count;
+            }
+        });
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching guide stats",
+            error: error.message
+        });
+    }
+}
