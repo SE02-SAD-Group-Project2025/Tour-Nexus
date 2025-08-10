@@ -1,80 +1,33 @@
 import mongoose from "mongoose";
 
-const hotelSchema = new mongoose.Schema({
-    hotel_id: {
-        type: String,
-        required: true,
-    },
-    email: {
-        type: String,
-        required: true,
-    },
-    hotel_name: {
-        type: String,
-        required: true,
-    },
-    images: [{
-        type: String,
-        required: true,
-    }],
-    address: {
-        type: String,
-        required: true,
-    },
-    city: {
-        type: String,
-        required: true,
-    },
-    contact_number: {
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-        required: true,
-    },
-    parking_available: {
-        type: Boolean,
-        default: false,
-    },
-    
-    // Simple room types array - just basic info
-    room_types: [{
-        name: {
-            type: String,
-            required: true,
-        },
-        count: {
-            type: Number,
-            required: true,
-        },
-        price: {
-            type: Number,
-            required: true,
-        },
-        facilities: [{
-            type: String,
-        }],
-        images: [{
-            type: String,
-            required: true,
-        }]
-    }],
-    
-    total_rooms: {
-        type: Number,
-        default: 0,
-    },
-    status: {
-        type: String,
-        default: 'pending'
-    },
-    date: {
-        type: Date,
-        default: Date.now
-    }
+const roomTypeSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    count: { type: Number, required: true },
+    available_room_count: { type: Number, default: function() { return this.count; } }, // Defaults to count
+    price: { type: Number, required: true },
+    facilities: [{ type: String }],
+    images: [{ type: String }],
 });
 
-const Hotel = mongoose.model("Hotel", hotelSchema);
+const hotelSchema = new mongoose.Schema({
+    hotel_id: { type: String, required: true, unique: true },
+    email: { type: String, required: true },
+    hotel_name: { type: String, required: true },
+    images: [{ type: String }],
+    address: { type: String, required: true },
+    city: { type: String, required: true },
+    contact_number: { type: String, required: true },
+    description: { type: String, required: true },
+    parking_available: { type: Boolean, required: true },
+    room_types: [roomTypeSchema],
+    total_rooms: { type: Number, required: true },
+    status: { 
+        type: String, 
+        enum: ["pending", "approved", "rejected"], 
+        default: "pending" 
+    },
+    date: { type: Date, default: Date.now },
+    updated_at: { type: Date, default: Date.now }
+});
 
-export default Hotel;
+export default mongoose.model("Hotel", hotelSchema);

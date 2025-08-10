@@ -44,6 +44,7 @@ mongoose.connect("mongodb+srv://admin:admin456@cluster0.7wwtz2t.mongodb.net/?ret
 app.use("/api/user",userRouter)
 app.use("/api/hotel",hotelRouter)
 app.use("/api/guide",guideRouter)
+app.use("/api/hotelbooking",hotelBookingRouter)
 
 app.listen(3000,()=>{
     console.log('Server is running on port 3000');
