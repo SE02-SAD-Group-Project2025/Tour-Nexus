@@ -43,6 +43,10 @@ function App() {
         <Route path="/tourist/guider_booking_form" element={<GuideBookingForm />}></Route>
         <Route path="/admin/pendingapprovels/guide/:guide_id" element={<RequestedGuideDetails />}></Route>
 
+        <Route path="/tourist/viewhotel/:hotel_id" element={<TouristViewHotelDetails />}></Route>
+        <Route path="/tourist/bookhotel/:hotel_id" element={<HotelBookingPage />}></Route>
+        
+
       </Routes>
     </BrowserRouter>
   );

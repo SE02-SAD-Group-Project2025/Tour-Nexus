@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { 
     Globe, Bell, User, Settings, LogOut, Calendar, MapPin, 
@@ -6,9 +5,11 @@ import {
     Star, Menu, X, ChevronDown, Building, Trash2, 
     Home, Wifi, Car, Coffee, Utensils, Shield
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import toast from 'react-hot-toast';
-
+import HotelDetailsView from './hotel_details_view';
+import EditHotelForm from './edit_hotel_details_form';
 
 function HotelOwnerDashboard() {
     const [hotels, setHotels] = useState([]);
@@ -16,10 +17,36 @@ function HotelOwnerDashboard() {
     const [error, setError] = useState(null);
     const [activeMenuItem, setActiveMenuItem] = useState('Dashboard');
     const [showDropdown, setShowDropdown] = useState(false);
+    const navigate = useNavigate();
     
-    
+    const [profile, setProfile] = useState(null);
+
+    const [selectedHotel, setSelectedHotel] = useState(null);
+    const [showHotelDetails, setShowHotelDetails] = useState(false);
+    const [showEditForm, setShowEditForm] = useState(false);
     
     const userEmail = localStorage.getItem('email');
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({
+        email: '',
+        name: '',
+        phone: ''
+    });
+
+    useEffect(() => {
+        if (profile) {
+            setFormData({
+                email: profile.email || '',
+                name: profile.fullname || '',
+                phone: profile.phone || ''
+            });
+        }
+    }, [profile]);
+
+    const handleProfileChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
     const sidebarItems = [
         { name: 'Dashboard', icon: Activity, emoji: '📊' },
@@ -28,9 +55,72 @@ function HotelOwnerDashboard() {
         { name: 'Reports', icon: BarChart3, emoji: '📊' },
         { name: 'Messages', icon: MessageCircle, emoji: '💬' },
         { name: 'Profile', icon: User, emoji: '👤' },
-        { name: 'Settings', icon: Settings, emoji: '⚙️' }
+        { name: 'Settings', icon: Settings, emoji: '⚙️' },
+        { name: 'Logout', icon: LogOut, emoji: '🚪' }
     ];
 
+    // Logout function
+    const handleLogout = () => {
+        if (window.confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('email');
+        toast.success('Logged out successfully');
+        navigate('/login'); // Redirect to login page
+        }
+    };
+
+    const handleCloseViews = () => {
+        setShowHotelDetails(false);
+        setShowEditForm(false);
+        setSelectedHotel(null);
+    };
+
+    const fetchProfile = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            
+            const response = await axios.get(
+                `${import.meta.env.VITE_BACKEND_URL}/api/user/view-user-by-email/${userEmail}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            if (response.data) {
+                setProfile(response.data);
+                
+                
+                toast.success('Profile loaded successfully');
+            } else {
+                setError('Failed to fetch profile');
+                toast.error('Failed to fetch profile');
+            }
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            let errorMessage = 'Failed to fetch profile';
+            
+            if (error.response) {
+                errorMessage = error.response.data?.message || `Server error (${error.response.status})`;
+            } else if (error.request) {
+                errorMessage = 'Network error. Please check your internet connection.';
+            }
+            
+            setError(errorMessage);
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (userEmail && activeMenuItem === 'Profile') {
+            fetchProfile();
+        }
+    }, [userEmail, activeMenuItem]);
     
     const fetchHotelsByOwner = async () => {
         try {
@@ -164,6 +254,10 @@ function HotelOwnerDashboard() {
                     // Remove hotel from local state
                     setHotels(prevHotels => prevHotels.filter(hotel => hotel.hotel_id !== hotel_id));
                     toast.success(`"${hotel_name}" deleted successfully`);
+
+                    if (selectedHotel && selectedHotel.hotel_id === hotel_id) {
+                        handleCloseViews();
+                    }
                 } else {
                     toast.error(response.data.message || 'Failed to delete hotel');
                 }
@@ -185,13 +279,56 @@ function HotelOwnerDashboard() {
     };
 
     const handleEditHotel = (hotel_id, hotel_name) => {
+        const hotel = hotels.find(h => h.hotel_id === hotel_id);
         
-        toast.info(`Edit functionality for "${hotel_name}" - To be implemented`);
+        if (!hotel) {
+            toast.error(`Hotel not found: "${hotel_name}"`);
+            return;
+        }
+
+        // Check if hotel is approved
+        if (hotel.status !== 'approved') {
+            const statusMessage = hotel.status === 'pending' 
+                ? `Cannot edit "${hotel_name}" - Hotel is still pending approval.`
+                : `Cannot edit "${hotel_name}" - Hotel has been rejected.`;
+            toast.error(statusMessage);
+            return;
+        }
+
+        setSelectedHotel(hotel);
+        setShowEditForm(true);
+        setShowHotelDetails(false); // Close details view if open
+    };
+
+    const handleSaveHotel = (updatedData) => {
+        // Update the hotel in the local state
+        setHotels(prevHotels => 
+            prevHotels.map(hotel => 
+                hotel.hotel_id === selectedHotel.hotel_id 
+                    ? { ...hotel, ...updatedData }
+                    : hotel
+            )
+        );
+        
+        // Optionally refresh the data from server
+        fetchHotelsByOwner();
     };
 
     const handleViewHotelDetails = (hotel_id, hotel_name) => {
-        
-        toast.info(`Viewing details for "${hotel_name}" - To be implemented`);
+        const hotel = hotels.find(h => h.hotel_id === hotel_id);
+        if (hotel) {
+            setSelectedHotel(hotel);
+            setShowHotelDetails(true);
+            setShowEditForm(false);
+        } else {
+            toast.error(`Hotel details not found for "${hotel_name}"`);
+        }
+    };
+
+    const handleCloseHotelDetails = () => {
+        setShowHotelDetails(false);
+        setSelectedHotel(null);
+        setSelectedHotel(null);
     };
 
     // Enhanced status color function
@@ -210,10 +347,14 @@ function HotelOwnerDashboard() {
 
     const handleMenuItemClick = (itemName) => {
         setActiveMenuItem(itemName);
+
+        handleCloseViews();
         
         // If switching to My Hotels, refresh the data
         if (itemName === 'My Hotels') {
             fetchHotelsByOwner();
+        }else if (itemName === 'Logout') {
+            handleLogout();
         }
     };
 
@@ -221,10 +362,27 @@ function HotelOwnerDashboard() {
         setShowDropdown(!showDropdown);
     };
 
-    const moveToAccount = (accountType) => {
-        toast.info(`Switching to ${accountType} account...`);
+    // const moveToAccount = (accountType) => {
+    //     toast.info(`Switching to ${accountType} account...`);
+    //     setShowDropdown(false);
+    // };
+
+    const moveToTourist = () => {
+        // toast.info(`Switching to ${accountType} account...`);
+        if (window.confirm('Are you sure switch to Tourist?')) {
+        navigate('/tourist/dashboard');
         setShowDropdown(false);
+        }
     };
+
+    const moveToGuide = () => {
+        // toast.info(`Switching to ${accountType} account...`);
+        if (window.confirm('Are you sure switch to Guide?')) {
+        navigate('/guide/dashboard');
+        setShowDropdown(false);
+        }
+    };
+
 
     // Enhanced stats calculation with error handling
     const calculateStats = () => {
@@ -288,13 +446,6 @@ function HotelOwnerDashboard() {
             <h3>Unable to Load Hotels</h3>
             <p>{error}</p>
             <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
-                <button 
-                    className="btn btn-primary" 
-                    onClick={fetchHotelsByOwner}
-                    disabled={isLoading}
-                >
-                    {isLoading ? 'Retrying...' : 'Try Again'}
-                </button>
                 <button 
                     className="btn btn-secondary" 
                     onClick={() => setError(null)}
@@ -432,9 +583,14 @@ function HotelOwnerDashboard() {
                         View Details
                     </button>
                     <button 
-                        className="action-btn secondary"
+                        className={`action-btn secondary ${hotel.status !== 'approved' ? 'disabled' : ''}`}
                         onClick={() => handleEditHotel(hotel.hotel_id, hotel.hotel_name)}
-                        title={`Edit ${hotel.hotel_name}`}
+                        title={
+                            hotel.status === 'approved' 
+                                ? `Edit ${hotel.hotel_name}` 
+                                : `Cannot edit ${hotel.status} hotel`
+                        }
+                        disabled={hotel.status !== 'approved'}
                     >
                         <Edit className="w-4 h-4" />
                     </button>
@@ -452,6 +608,28 @@ function HotelOwnerDashboard() {
 
     // Content rendering function with enhanced error handling
     const renderContent = () => {
+
+        if (showEditForm && selectedHotel) {
+            return (
+                <EditHotelForm
+                    hotel={selectedHotel}
+                    onBack={handleCloseViews}
+                    onSave={handleSaveHotel}
+                />
+            );
+        }
+
+        if (showHotelDetails && selectedHotel) {
+            return (
+                <HotelDetailsView
+                    hotel={selectedHotel}
+                    onBack={handleCloseHotelDetails}
+                    onEdit={handleEditHotel}
+                    onDelete={handleDeleteHotel}
+                />
+            );
+        }
+
         if (activeMenuItem === 'Dashboard') {
             return (
                 <>
@@ -575,7 +753,9 @@ function HotelOwnerDashboard() {
                                 Add New Hotel
                             </Link>
                         </div>
-                    </div>
+                    </div> 
+
+                    
 
                     {/* Loading State */}
                     {isLoading && <LoadingState />}
@@ -604,18 +784,149 @@ function HotelOwnerDashboard() {
             );
         }
         
-        
+        // Other menu items remain the same...
         if (activeMenuItem === 'Bookings') {
             return (
                 <div>
                     <h1>Bookings Management</h1>
                     <p>View and manage all hotel reservations</p>
-                    
+                    {/* Add your bookings implementation here */}
                 </div>
             );
         }
+
+        if (activeMenuItem === 'Profile') {
+    
+
+    const handleProfileSave = async () => {
+        try {
+            const response = await axios.put(
+                `${import.meta.env.VITE_BACKEND_URL}/api/user/update/${formData.email}`,
+                {
+                    fullname: formData.name,
+                    phone: formData.phone
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.data.success) {
+                // toast.success("Profile updated successfully");
+                fetchProfile();
+                setIsEditing(false);
+            } else {
+                toast.error(response.data.message || "Update failed");
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.message || "Server error");
+        }
+    };
+
+    return (
+        <div className="profile-page">
+            <div className="page-header">
+                <div>
+                    <h1>My Profile</h1>
+                    <p>Manage your account details</p>
+                </div>
+                <div className="header-actions">
+                    <button 
+                        className="btn btn-secondary"
+                        onClick={fetchProfile}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Refreshing...' : 'Refresh'}
+                    </button>
+                </div>
+            </div>
+
+            {isLoading && <LoadingState />}
+            {error && !isLoading && <ErrorState />}
+
+            {!isLoading && !error && (
+                <div className="profile-content">
+                    <div className="profile-card">
+                        <h2>Account Information</h2>
+                        <div className="profile-details">
+                            <div className="profile-item">
+                                <label>Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    disabled
+                                />
+                            </div>
+
+                            <div className="profile-item">
+                                <label>Name</label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleProfileChange}
+                                    disabled={!isEditing}
+                                />
+                            </div>
+
+                            <div className="profile-item">
+                                <label>Contact Number</label>
+                                <input
+                                    type="text"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleProfileChange}
+                                    disabled={!isEditing}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="profile-actions">
+                            {!isEditing ? (
+                                <button 
+                                    className="action-btn primary"
+                                    onClick={() => setIsEditing(true)}
+                                >
+                                    Edit Profile
+                                </button>
+                            ) : (
+                                <>
+                                    <button 
+                                        className="action-btn primary"
+                                        onClick={handleProfileSave}
+                                    >
+                                        Save Changes
+                                    </button>
+                                    <button 
+                                        className="action-btn secondary"
+                                        onClick={() => {
+                                            setFormData({
+                                                email: profile.email,
+                                                name: profile.name,
+                                                phone: profile.phone
+                                            });
+                                            setIsEditing(false);
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
         
-        
+        // For any other menu items, show a generic content page
         return (
             <div>
                 <h1>{activeMenuItem}</h1>
@@ -1361,6 +1672,321 @@ function HotelOwnerDashboard() {
                     transform: translateY(-1px);
                     box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
                 }
+                .hotel-details-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    z-index: 1000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                }
+
+                .hotel-details-modal {
+                    width: 100%;
+                    max-width: 1200px;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+                }
+
+                /* Enhanced hover effects for hotel cards */
+                .hotel-card .action-btn.primary:hover {
+                    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+                }
+
+                /* Add smooth transitions */
+                .main-content {
+                    transition: all 0.3s ease;
+                }
+
+                /* Responsive adjustments */
+                @media (max-width: 768px) {
+                    .hotel-details-overlay {
+                        padding: 0;
+                        align-items: flex-start;
+                    }
+                    
+                    .hotel-details-modal {
+                        max-height: 100vh;
+                        border-radius: 0;
+                    }
+                }
+                
+                .profile-page {
+    background: #f5f5f5;
+}
+
+.profile-content {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.profile-card {
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.profile-card h2 {
+    font-size: 20px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.profile-details {
+    display: grid;
+    gap: 16px;
+}
+
+.profile-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.profile-item label {
+    font-weight: 600;
+    color: #374151;
+}
+
+.profile-item span {
+    color: #6b7280;
+}
+
+.profile-actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .profile-content {
+        max-width: 100%;
+    }
+
+    .profile-item {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .profile-item label {
+        font-size: 14px;
+    }
+
+    .profile-item span {
+        font-size: 14px;
+    }
+}
+    .action-btn.disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                    background: #f3f4f6 !important;
+                    color: #9ca3af !important;
+                    border-color: #e5e7eb !important;
+                }
+
+                .action-btn.disabled:hover {
+                    transform: none !important;
+                    box-shadow: none !important;
+                }
+
+                /* Status-specific styling for hotel cards */
+                .hotel-card[data-status="pending"] .action-btn.secondary {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                .hotel-card[data-status="rejected"] .action-btn.secondary {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                /* Enhanced hover states */
+                .hotel-card:hover .action-btn:not(.disabled) {
+                    transform: translateY(-1px);
+                }
+
+                /* Transition improvements */
+                .main-content {
+                    transition: all 0.3s ease;
+                    min-height: calc(100vh - 70px);
+                }
+
+                /* Loading overlay for form submissions */
+                .form-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                }
+
+                .form-loading {
+                    background: white;
+                    padding: 30px;
+                    border-radius: 12px;
+                    text-align: center;
+                    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+                }
+
+                /* Keep all existing styles from the original dashboard */
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f5f5f5;
+                    color: #333;
+                }
+                
+                .main-container {
+                    display: flex;
+                    min-height: 100vh;
+                }
+                
+                .header {
+                    background: white;
+                    padding: 15px 20px;
+                    border-bottom: 1px solid #ddd;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    z-index: 100;
+                }
+                
+                .logo {
+                    font-size: 20px;
+                    font-weight: bold;
+                    color: #3b82f6;
+                }
+                
+                .search-bar {
+                    flex: 1;
+                    max-width: 400px;
+                    margin: 0 20px;
+                }
+                
+                .search-bar input {
+                    width: 100%;
+                    padding: 10px 15px;
+                    border: 1px solid #ddd;
+                    border-radius: 25px;
+                    background-color: #f8f9fa;
+                }
+                
+                .user-section {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                }
+                
+                .user-profile {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 5px 10px;
+                    border: 1px solid #ddd;
+                    background: white;
+                    cursor: pointer;
+                    position: relative;
+                }
+                
+                .user-profile:hover {
+                    background-color: #f8f9fa;
+                }
+                
+                .dropdown-menu {
+                    position: absolute;
+                    top: 100%;
+                    right: 0;
+                    background: white;
+                    border: 1px solid #ddd;
+                    border-top: none;
+                    min-width: 200px;
+                    z-index: 1000;
+                    display: none;
+                }
+                
+                .dropdown-menu.show {
+                    display: block;
+                }
+                
+                .dropdown-header {
+                    padding: 12px 16px;
+                    font-weight: bold;
+                    border-bottom: 1px solid #eee;
+                    color: #333;
+                    background-color: #f8f9fa;
+                }
+                
+                .dropdown-item {
+                    padding: 12px 16px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #f0f0f0;
+                    transition: background-color 0.2s;
+                }
+                
+                .dropdown-item:hover {
+                    background-color: #f8f9fa;
+                }
+                
+                .sidebar {
+                    width: 250px;
+                    background: white;
+                    border-right: 1px solid #ddd;
+                    margin-top: 70px;
+                    position: fixed;
+                    height: calc(100vh - 70px);
+                    overflow-y: auto;
+                }
+                
+                .sidebar-item {
+                    padding: 15px 20px;
+                    border-bottom: 1px solid #f0f0f0;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+                
+                .sidebar-item:hover {
+                    background-color: #f8f9fa;
+                }
+                
+                .sidebar-item.active {
+                    background-color: #3b82f6;
+                    color: white;
+                }
+                
+                .main-content {
+                    flex: 1;
+                    margin-left: 250px;
+                    margin-top: 70px;
+                    padding: 30px;
+                }
             `}</style>
 
             <div className="header">
@@ -1376,12 +2002,13 @@ function HotelOwnerDashboard() {
                         
                         <div className={`dropdown-menu ${showDropdown ? 'show' : ''}`}>
                             <div className="dropdown-header">Switch Account</div>
-                            <div className="dropdown-item" onClick={() => moveToAccount('Tourist')}>
+                            <div className="dropdown-item" onClick={() => moveToTourist('Tourist')}>
                                 Tourist
                             </div>
-                            <div className="dropdown-item" onClick={() => moveToAccount('Guide')}>
+                            <div className="dropdown-item" onClick={() => moveToGuide('Guide')}>
                                 Guide
                             </div>
+                            <div></div>
                         </div>
                     </div>
                 </div>
