@@ -49,11 +49,6 @@ const hotelBookingSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-    card_details: {
-        card_last_four: String,
-        card_type: String,
-        cardholder_name: String
-    },
     booking_status: {
         type: String,
         enum: ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'],

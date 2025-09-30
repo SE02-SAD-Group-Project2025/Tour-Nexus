@@ -42,6 +42,12 @@ export function loginUser(req, res){
                     message: "User not found"
                 });
             }
+
+            if(user.isblocked){
+                return res.status(403).json({
+                    message: "User is blocked"
+                });
+            }
             else{
 
                 const isPasswordCorrect = bcrypt.compareSync(password,user.password);
@@ -80,34 +86,77 @@ export function loginUser(req, res){
 }
 
 
-export async function updateTourist(req, res) {
-    try{
-        await User.updateOne({email:req.params.email},req.body);
+
+
+export async function updateUser(req, res) {
+    try {
+        const email = req.params?.email;
+        const { fullname, phone, role, password, isblocked } = req.body;
+
+        // If nothing to update, return error
+        if (
+            fullname === undefined &&
+            phone === undefined &&
+            role === undefined &&
+            password === undefined &&
+            isblocked === undefined
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "No fields to update"
+            });
+        }
+
+        const updates = {};
+
+        if (fullname !== undefined) updates.fullname = fullname;
+        if (phone !== undefined) updates.phone = phone;
+        if (role !== undefined) updates.role = role;
+        if (password !== undefined) updates.password = bcrypt.hashSync(password, 10);
+        if (isblocked !== undefined) updates.isblocked = isblocked;
+
+        const result = await User.updateOne(
+            { email: email },
+            { $set: updates }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
         res.status(200).json({
             success: true,
-            message: "Tourist updated successfully",
+            message: "User updated successfully"
         });
-    }
-    catch(error){
+
+    } catch (error) {
+        console.error("Update error:", error);
         res.status(500).json({
             success: false,
-            message: "Error updating tourist",
-        })
+            message: "Error updating user",
+            error: error.message
+        });
     }
 }
 
-export async function deleteTourist(req, res) {
+
+
+
+export async function deleteuser(req, res) {
 try{
     await User.deleteOne({email:req.params.email});
     res.status(200).json({
         success: true,
-        message: "Tourist deleted successfully",
+        message: "User deleted successfully",
     });
     }
 catch(error){
     res.status(500).json({
         success: false,
-        message: "Error deleting tourist",
+        message: "User deleting tourist",
     })
     }
     
@@ -144,3 +193,53 @@ export function isGuide(req,res){
             return true;
         }
     }
+
+export function isVehicleCompany(req,res){
+        if(req.user == null){
+            return false;
+        }
+        if(req.user.role == "Vehicle"){
+            return true;
+        }
+    }
+
+export function isBlocked(req,res){
+        if(req.user == null){
+            return false;
+        }
+        if(req.user.status == "Blocked"){
+            return true;
+        }
+    }
+
+
+    export async function view_all_users(req,res){
+        
+        try{
+            const viewUsers = await User.find().select('-password');
+            res.status(200).json(viewUsers);
+        }catch(err){
+            res.status(500).json({
+                message: "Failed to get Users",
+                error: err.message,
+            })
+        }
+    }
+
+export async function viewDetails(req,res){
+
+  const email = req.params.email;
+
+  try{
+    const user = await User.findOne({email:email});
+    res.json(user);
+    
+  }catch(error){
+    res.status(500).json({
+      success: false,
+      message: "Error fetching user details",
+      error: error.message
+    })
+  }
+   
+}

@@ -6,6 +6,9 @@ import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import hotelRouter from './routes/hotelrouter.js';
 import guideRouter from './routes/guiderouter.js';
+import vehicleRouter from './routes/vehiclerouter.js';
+import guideBookingRouter from './routes/guidebookingrouter.js';
+import hotelBookingRouter from './routes/hotelbookingrouter.js';
 
 const app = express();
 
@@ -45,6 +48,8 @@ app.use("/api/user",userRouter)
 app.use("/api/hotel",hotelRouter)
 app.use("/api/guide",guideRouter)
 app.use("/api/hotelbooking",hotelBookingRouter)
+app.use("/api/guidebookings",guideBookingRouter)
+app.use("/api/vehicle",vehicleRouter)
 
 app.listen(3000,()=>{
     console.log('Server is running on port 3000');

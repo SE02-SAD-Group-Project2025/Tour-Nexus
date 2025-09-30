@@ -19,7 +19,7 @@ export async function createHotelBooking(req, res) {
         // Extract booking data
         const {
             hotel_id, category_id, no_of_rooms, no_of_guests, per_price, total_price,
-            check_in_date, check_out_date, special_requests, payment_method, card_details,
+            check_in_date, check_out_date, special_requests,
             booking_status = 'pending', email
         } = req.body;
 
@@ -101,30 +101,30 @@ export async function createHotelBooking(req, res) {
         }
 
         // Process card details
-        let processedCardDetails = {};
-        if (card_details && card_details.card_number) {
-            const cardNumber = card_details.card_number.replace(/\s/g, '');
-            if (cardNumber.length < 13 || cardNumber.length > 19) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid card number"
-                });
-            }
+        // let processedCardDetails = {};
+        // if (card_details && card_details.card_number) {
+        //     const cardNumber = card_details.card_number.replace(/\s/g, '');
+        //     if (cardNumber.length < 13 || cardNumber.length > 19) {
+        //         return res.status(400).json({
+        //             success: false,
+        //             message: "Invalid card number"
+        //         });
+        //     }
 
-            processedCardDetails = {
-                card_last_four: cardNumber.slice(-4),
-                card_type: detectCardType(cardNumber),
-                cardholder_name: card_details.cardholder_name
-            };
+        //     processedCardDetails = {
+        //         card_last_four: cardNumber.slice(-4),
+        //         card_type: detectCardType(cardNumber),
+        //         cardholder_name: card_details.cardholder_name
+        //     };
 
-            const paymentSuccess = await simulatePaymentProcessing(card_details, total_price);
-            if (!paymentSuccess) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Payment processing failed"
-                });
-            }
-        }
+        //     const paymentSuccess = await simulatePaymentProcessing(card_details, total_price);
+        //     if (!paymentSuccess) {
+        //         return res.status(400).json({
+        //             success: false,
+        //             message: "Payment processing failed"
+        //         });
+        //     }
+        // }
 
         // Create booking
         const hotelBooking = new HotelBooking({
@@ -132,7 +132,7 @@ export async function createHotelBooking(req, res) {
             check_in_date: checkInDate, check_out_date: checkOutDate,
             no_of_rooms: parseInt(no_of_rooms), no_of_guests: parseInt(no_of_guests),
             room_type: roomType.name, room_price: per_price, total_amount: total_price,
-            special_requests: special_requests || '', card_details: processedCardDetails,
+            special_requests: special_requests || '',
             booking_status
         });
 
@@ -268,6 +268,222 @@ async function updateRoomAvailability(hotel_id, roomTypeIndex, roomChange) {
     }
 }
 
+export async function cancelBooking(req, res) {
+    try {
+        const { booking_id } = req.params;
+        const { cancellation_reason } = req.body;
+        
+        const booking = await HotelBooking.findOne({ hotel_booking_id: booking_id });
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        if (booking.booking_status === 'cancelled') {
+            return res.status(400).json({
+                success: false,
+                message: "Booking is already cancelled"
+            });
+        }
+
+        if (booking.booking_status === 'completed') {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot cancel completed booking"
+            });
+        }
+
+        const checkInDate = new Date(booking.check_in_date);
+        const now = new Date();
+        const hoursUntilCheckIn = (checkInDate - now) / (1000 * 60 * 60);
+
+        if (hoursUntilCheckIn < 24) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot cancel booking within 24 hours of check-in"
+            });
+        }
+
+        const hotel = await Hotel.findOne({ hotel_id: booking.hotel_id });
+        const roomTypeIndex = hotel.room_types.findIndex(rt => rt.name === booking.room_type);
+
+        if (roomTypeIndex === -1) {
+            return res.status(400).json({
+                success: false,
+                message: "Room type not found in hotel"
+            });
+        }
+
+        await HotelBooking.updateOne(
+            { hotel_booking_id: booking_id },
+            {
+                booking_status: 'cancelled',
+                cancellation_reason: cancellation_reason || 'Cancelled by user',
+                cancellation_date: new Date(),
+                updated_at: new Date()
+            }
+        );
+
+        await updateRoomAvailability(booking.hotel_id, roomTypeIndex, booking.no_of_rooms);
+
+        res.status(200).json({
+            success: true,
+            message: "Booking cancelled successfully and room availability restored"
+        });
+
+    } catch (error) {
+        console.error("Error cancelling booking:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error cancelling booking",
+            error: error.message
+        });
+    }
+}
+
+export async function getUserBookings(req, res) {
+    try {
+        const userEmail = req.params.email;
+        const bookings = await HotelBooking.find({ email: userEmail })
+            .sort({ date: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: bookings,
+            count: bookings.length
+        });
+
+    } catch (error) {
+        console.error("Error fetching user bookings:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching bookings",
+            error: error.message
+        });
+    }
+}
+
+export async function getBookingById(req, res) {
+    try {
+        const { booking_id } = req.params;
+        const booking = await HotelBooking.findOne({ hotel_booking_id: booking_id });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: booking
+        });
+
+    } catch (error) {
+        console.error("Error fetching booking:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching booking",
+            error: error.message
+        });
+    }
+}
+
+export async function getAllBookings(req, res) {
+    try {
+        
+
+        const { status, hotel_id, page = 1, limit = 20 } = req.query;
+        let query = {};
+        if (status) query.booking_status = status;
+        if (hotel_id) query.hotel_id = hotel_id;
+
+        const skip = (page - 1) * limit;
+
+        const [bookings, total] = await Promise.all([
+            HotelBooking.find(query)
+                .sort({ date: -1 })
+                .skip(skip)
+                .limit(parseInt(limit)),
+            HotelBooking.countDocuments(query)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: bookings,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching all bookings:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching bookings",
+            error: error.message
+        });
+    }
+}
+
+export async function updateBookingStatus(req, res) {
+    try {
+        const { booking_id } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid booking status"
+            });
+        }
+
+        const booking = await HotelBooking.findOne({ hotel_booking_id: booking_id });
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        if (status === 'cancelled' && booking.booking_status !== 'cancelled') {
+            const hotel = await Hotel.findOne({ hotel_id: booking.hotel_id });
+            const roomTypeIndex = hotel.room_types.findIndex(rt => rt.name === booking.room_type);
+            
+            if (roomTypeIndex !== -1) {
+                await updateRoomAvailability(booking.hotel_id, roomTypeIndex, booking.no_of_rooms);
+            }
+        }
+
+        await HotelBooking.updateOne(
+            { hotel_booking_id: booking_id },
+            { 
+                booking_status: status,
+                updated_at: new Date()
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Booking status updated successfully"
+        });
+
+    } catch (error) {
+        console.error("Error updating booking status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error updating booking status",
+            error: error.message
+        });
+    }
+}
 
 export async function getRoomAvailability(req, res) {
     try {
@@ -331,20 +547,106 @@ export async function getRoomAvailability(req, res) {
     }
 }
 
-function detectCardType(cardNumber) {
-    const firstDigit = cardNumber.charAt(0);
-    const firstTwoDigits = cardNumber.substring(0, 2);
-    const firstFourDigits = cardNumber.substring(0, 4);
+// function detectCardType(cardNumber) {
+//     const firstDigit = cardNumber.charAt(0);
+//     const firstTwoDigits = cardNumber.substring(0, 2);
+//     const firstFourDigits = cardNumber.substring(0, 4);
 
-    if (firstDigit === '4') return 'Visa';
-    if (['51', '52', '53', '54', '55'].includes(firstTwoDigits)) return 'MasterCard';
-    if (['34', '37'].includes(firstTwoDigits)) return 'American Express';
-    if (firstFourDigits === '6011' || firstTwoDigits === '65') return 'Discover';
-    return 'Unknown';
-}
+//     if (firstDigit === '4') return 'Visa';
+//     if (['51', '52', '53', '54', '55'].includes(firstTwoDigits)) return 'MasterCard';
+//     if (['34', '37'].includes(firstTwoDigits)) return 'American Express';
+//     if (firstFourDigits === '6011' || firstTwoDigits === '65') return 'Discover';
+//     return 'Unknown';
+// }
 
-async function simulatePaymentProcessing(cardDetails, amount) {
-    return new Promise((resolve) => {
-        setTimeout(() => resolve(true), 1000);
-    });
+// async function simulatePaymentProcessing(cardDetails, amount) {
+//     return new Promise((resolve) => {
+//         setTimeout(() => resolve(true), 1000);
+//     });
+// }
+
+
+export async function getHotelOwnerUpcomingBookings(req, res) {
+    try {
+        const { hotel_id } = req.params;
+        const { page = 1, limit = 10 } = req.query;
+
+        // Verify hotel exists and get owner information
+        const hotel = await Hotel.findOne({ hotel_id });
+        if (!hotel) {
+            return res.status(404).json({
+                success: false,
+                message: "Hotel not found"
+            });
+        }
+
+        // Verify if the requesting user is the hotel owner
+        // Assuming req.user contains authenticated user information
+        if (req.user && req.user.email !== hotel.email) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized: You are not the owner of this hotel"
+            });
+        }
+
+        // Build query for upcoming bookings
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let query = { 
+            hotel_id,
+            check_in_date: { $gte: today },
+            booking_status: { $in: ['pending', 'confirmed'] }
+        };
+
+        const skip = (page - 1) * limit;
+
+        // Fetch bookings with pagination
+        const [bookings, total] = await Promise.all([
+            HotelBooking.find(query)
+                .select('hotel_booking_id email hotel_name room_type check_in_date check_out_date no_of_rooms no_of_guests total_amount booking_status date')
+                .sort({ check_in_date: 1 }) // Sort by check-in date ascending
+                .skip(skip)
+                .limit(parseInt(limit)),
+            HotelBooking.countDocuments(query)
+        ]);
+
+        // Format response data
+        const formattedBookings = bookings.map(booking => ({
+            booking_id: booking.hotel_booking_id,
+            guest_email: booking.email,
+            hotel_name: booking.hotel_name,
+            room_type: booking.room_type,
+            check_in_date: booking.check_in_date,
+            check_out_date: booking.check_out_date,
+            no_of_rooms: booking.no_of_rooms,
+            no_of_guests: booking.no_of_guests,
+            total_amount: booking.total_amount,
+            booking_status: booking.booking_status,
+            booking_date: booking.date
+        }));
+
+        res.status(200).json({
+            success: true,
+            data: formattedBookings,
+            hotel: {
+                hotel_id: hotel.hotel_id,
+                hotel_name: hotel.hotel_name
+            },
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching hotel owner upcoming bookings:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching upcoming bookings",
+            error: error.message
+        });
+    }
 }
