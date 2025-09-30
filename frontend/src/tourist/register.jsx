@@ -1,346 +1,593 @@
-import axios from 'axios';
-import React, { useState } from 'react';
-import { Globe, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, Sparkles, Shield, Star, Users, CheckCircle, Heart, Camera, Map, Plane, Award, ChevronDown } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import axios from "axios";
+import React, { useState } from "react";
+import {
+  Globe,
+  User,
+  Mail,
+  Lock,
+  Phone,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Sparkles,
+  Shield,
+  Star,
+  Users,
+  CheckCircle,
+  Heart,
+  Camera,
+  Map,
+  Plane,
+  Award,
+  ChevronDown,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
-import { toast } from 'react-hot-toast';
+import { toast } from "react-hot-toast";
 
 export default function RegisterTouristDesign() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    // State management for all form fields
-    const [fullname, setFullName] = useState("");
-    const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
-    const [role, setRole] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+  // State management for all form fields
+  const [fullname, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Validation states
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
+  // Validation functions
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
-    async function handleRegister() {
-        try {
-            await axios.post(import.meta.env.VITE_BACKEND_URL + '/api/user/register', {
-                fullname,
-                email,
-                phone,
-                role,
-                password,
-            });
+  const validatePhone = (phone) => {
+    // Basic phone validation - just check if it contains numbers and is reasonable length
+    const phoneRegex = /^[+]?[\d\s\-()]{7,15}$/;
+    return phoneRegex.test(phone.trim());
+  };
 
-            toast.success("Registration Successfull");
-            navigate("/login");
+  const validateFullName = (name) => {
+    // Check if name contains any numbers
+    const hasNumbers = /\d/.test(name);
+    return !hasNumbers && name.trim().length >= 2;
+  };
 
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Something went wrong");
-            console.error("Registration error:", error);
-        }
+  const validatePassword = (password) => {
+    return password.length >= 6;
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Full name validation
+    if (!fullname.trim()) {
+      newErrors.fullname = "Full name is required";
+    } else if (!validateFullName(fullname)) {
+      if (/\d/.test(fullname)) {
+        newErrors.fullname = "Full name cannot contain numbers";
+      } else {
+        newErrors.fullname = "Full name must be at least 2 characters";
+      }
     }
 
-    // Trust indicators
-    const trustIndicators = [
-        { icon: Shield, text: "Secure & Protected", color: "text-green-500" },
-        { icon: Users, text: "50K+ Happy Travelers", color: "text-blue-500" },
-        { icon: Star, text: "4.9/5 Rating", color: "text-yellow-500" },
-        { icon: Award, text: "Award Winning", color: "text-purple-500" }
-    ];
+    // Email validation
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!validateEmail(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
 
-    // Feature highlights for inspiration
-    const features = [
-        { icon: Plane, label: "Amazing Destinations" },
-        { icon: Camera, label: "Capture Memories" },
-        { icon: Map, label: "Expert Guidance" },
-        { icon: Heart, label: "Unforgettable Experiences" }
-    ];
+    // Phone validation
+    if (!phone) {
+      newErrors.phone = "Phone number is required";
+    } else if (!validatePhone(phone)) {
+      newErrors.phone = "Please enter a valid phone number";
+    }
 
-    return (
-        <div className="min-h-screen overflow-hidden relative bg-gradient-to-br from-slate-50 via-sky-50 to-emerald-50">
-            {/* Enhanced Background with Geometric Patterns */}
-            <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-emerald-500/10 to-sky-500/10"></div>
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent"></div>
+    // Role validation
+    if (!role) {
+      newErrors.role = "Please select your role";
+    }
+
+    // Password validation
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (!validatePassword(password)) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+
+    // Confirm password validation
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFieldBlur = (fieldName) => {
+    setTouched({ ...touched, [fieldName]: true });
+
+    // Real-time validation for specific field
+    const newErrors = { ...errors };
+
+    switch (fieldName) {
+      case "fullname":
+        if (!fullname.trim()) {
+          newErrors.fullname = "Full name is required";
+        } else if (!validateFullName(fullname)) {
+          if (/\d/.test(fullname)) {
+            newErrors.fullname = "Full name cannot contain numbers";
+          } else {
+            newErrors.fullname = "Full name must be at least 2 characters";
+          }
+        } else {
+          delete newErrors.fullname;
+        }
+        break;
+
+      case "email":
+        if (!email) {
+          newErrors.email = "Email is required";
+        } else if (!validateEmail(email)) {
+          newErrors.email = "Please enter a valid email address";
+        } else {
+          delete newErrors.email;
+        }
+        break;
+
+      case "phone":
+        if (!phone) {
+          newErrors.phone = "Phone number is required";
+        } else if (!validatePhone(phone)) {
+          newErrors.phone = "Please enter a valid phone number";
+        } else {
+          delete newErrors.phone;
+        }
+        break;
+
+      case "role":
+        if (!role) {
+          newErrors.role = "Please select your role";
+        } else {
+          delete newErrors.role;
+        }
+        break;
+
+      case "password":
+        if (!password) {
+          newErrors.password = "Password is required";
+        } else if (!validatePassword(password)) {
+          newErrors.password = "Password must be at least 6 characters";
+        } else {
+          delete newErrors.password;
+        }
+        break;
+
+      case "confirmPassword":
+        if (!confirmPassword) {
+          newErrors.confirmPassword = "Please confirm your password";
+        } else if (password !== confirmPassword) {
+          newErrors.confirmPassword = "Passwords do not match";
+        } else {
+          delete newErrors.confirmPassword;
+        }
+        break;
+    }
+
+    setErrors(newErrors);
+  };
+
+  async function handleRegister() {
+    // Validate form before submission
+    if (!validateForm()) {
+      toast.error("Please fix the errors before submitting");
+      return;
+    }
+
+    try {
+      await axios.post(
+        import.meta.env.VITE_BACKEND_URL + "/api/user/register",
+        {
+          fullname,
+          email,
+          phone,
+          role,
+          password,
+        }
+      );
+
+      toast.success("Registration Successfull");
+      navigate("/login");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Something went wrong");
+      console.error("Registration error:", error);
+    }
+  }
+
+  // Trust indicators
+  const trustIndicators = [
+    { icon: Shield, text: "Secure & Protected", color: "text-green-500" },
+    { icon: Users, text: "50K+ Happy Travelers", color: "text-blue-500" },
+    { icon: Star, text: "4.9/5 Rating", color: "text-yellow-500" },
+    { icon: Award, text: "Award Winning", color: "text-purple-500" },
+  ];
+
+  // Feature highlights for inspiration
+  const features = [
+    { icon: Plane, label: "Amazing Destinations" },
+    { icon: Camera, label: "Capture Memories" },
+    { icon: Map, label: "Expert Guidance" },
+    { icon: Heart, label: "Unforgettable Experiences" },
+  ];
+
+  return (
+    <div className="min-h-screen overflow-hidden relative bg-gradient-to-br from-slate-50 via-sky-50 to-emerald-50">
+      {/* Enhanced Background with Geometric Patterns */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-emerald-500/10 to-sky-500/10"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent"></div>
+      </div>
+
+      {/* Floating Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Animated orbs */}
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-teal-400/20 to-emerald-400/20 rounded-full blur-xl animate-pulse" />
+        <div className="absolute bottom-32 right-32 w-24 h-24 bg-gradient-to-r from-sky-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse" />
+
+        {/* Floating particles */}
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-white/30 rounded-full animate-pulse"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${Math.random() * 8 + 4}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex">
+        {/* Left Side - Branding & Features */}
+        <div className="hidden lg:flex lg:w-1/2 flex-col justify-center p-12 xl:p-20">
+          {/* Logo and Brand */}
+          <div className="mb-12">
+            <div className="flex items-center space-x-4 mb-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-teal-400 via-emerald-500 to-sky-500 rounded-3xl flex items-center justify-center shadow-2xl">
+                <Globe className="w-9 h-9 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-black bg-gradient-to-r from-teal-600 via-emerald-600 to-sky-600 bg-clip-text text-transparent">
+                  TourNexus
+                </h1>
+                <p className="text-teal-600 font-medium">Discover Paradise</p>
+              </div>
             </div>
 
-            {/* Floating Elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {/* Animated orbs */}
-                <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-teal-400/20 to-emerald-400/20 rounded-full blur-xl animate-pulse" />
-                <div className="absolute bottom-32 right-32 w-24 h-24 bg-gradient-to-r from-sky-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse" />
+            <h2 className="text-5xl xl:text-6xl font-black text-gray-900 mb-6 leading-tight">
+              Start Your Journey,
+              <span className="block bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
+                Explorer!
+              </span>
+            </h2>
 
-                {/* Floating particles */}
-                {[...Array(15)].map((_, i) => (
-                    <div
-                        key={i}
-                        className="absolute w-2 h-2 bg-white/30 rounded-full animate-pulse"
-                        style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
-                            animationDelay: `${Math.random() * 5}s`,
-                            animationDuration: `${Math.random() * 8 + 4}s`
-                        }}
-                    />
-                ))}
+            <p className="text-xl text-gray-700 mb-12 leading-relaxed">
+              Join thousands of travelers discovering Sri Lanka's magical
+              destinations. Your adventure begins with a simple registration.
+            </p>
+
+            {/* Feature highlights */}
+            <div className="grid grid-cols-2 gap-6 mb-12">
+              {features.map((feature, index) => (
+                <div
+                  key={index}
+                  className="flex items-center space-x-3 group hover:scale-105 hover:translate-x-2 transition-all duration-300"
+                >
+                  <div className="w-12 h-12 bg-teal-50 backdrop-blur-md rounded-2xl flex items-center justify-center group-hover:bg-teal-100 transition-all duration-300 border border-teal-200">
+                    <feature.icon className="w-6 h-6 text-teal-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
+                    {feature.label}
+                  </span>
+                </div>
+              ))}
             </div>
 
-            {/* Main Content */}
-            <div className="relative z-10 min-h-screen flex">
-                {/* Left Side - Branding & Features */}
-                <div className="hidden lg:flex lg:w-1/2 flex-col justify-center p-12 xl:p-20">
-                    {/* Logo and Brand */}
-                    <div className="mb-12">
-                        <div className="flex items-center space-x-4 mb-8">
-                            <div className="w-16 h-16 bg-gradient-to-br from-teal-400 via-emerald-500 to-sky-500 rounded-3xl flex items-center justify-center shadow-2xl">
-                                <Globe className="w-9 h-9 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-4xl font-black bg-gradient-to-r from-teal-600 via-emerald-600 to-sky-600 bg-clip-text text-transparent">
-                                    TourNexus
-                                </h1>
-                                <p className="text-teal-600 font-medium">Discover Paradise</p>
-                            </div>
-                        </div>
+            {/* Trust indicators */}
+            <div className="grid grid-cols-2 gap-4">
+              {trustIndicators.map((indicator, index) => (
+                <div
+                  key={index}
+                  className="flex items-center space-x-2 bg-white/80 backdrop-blur-md rounded-xl p-3 border border-gray-200 shadow-sm hover:scale-105 transition-transform duration-300"
+                >
+                  <indicator.icon className={`w-5 h-5 ${indicator.color}`} />
+                  <span className="text-gray-700 text-sm font-medium">
+                    {indicator.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-                        <h2 className="text-5xl xl:text-6xl font-black text-gray-900 mb-6 leading-tight">
-                            Start Your Journey,
-                            <span className="block bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
-                                Explorer!
-                            </span>
-                        </h2>
+        {/* Right Side - Registration Form */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
+          <div className="w-full max-w-md">
+            {/* Form Container */}
+            <div className="bg-white/80 backdrop-blur-2xl rounded-3xl p-8 xl:p-10 shadow-2xl border border-white/50 relative overflow-hidden">
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-teal-100/50 to-emerald-100/50 rounded-full blur-2xl"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-sky-100/50 to-purple-100/50 rounded-full blur-2xl"></div>
 
-                        <p className="text-xl text-gray-700 mb-12 leading-relaxed">
-                            Join thousands of travelers discovering Sri Lanka's magical destinations.
-                            Your adventure begins with a simple registration.
-                        </p>
-
-                        {/* Feature highlights */}
-                        <div className="grid grid-cols-2 gap-6 mb-12">
-                            {features.map((feature, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center space-x-3 group hover:scale-105 hover:translate-x-2 transition-all duration-300"
-                                >
-                                    <div className="w-12 h-12 bg-teal-50 backdrop-blur-md rounded-2xl flex items-center justify-center group-hover:bg-teal-100 transition-all duration-300 border border-teal-200">
-                                        <feature.icon className="w-6 h-6 text-teal-600" />
-                                    </div>
-                                    <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
-                                        {feature.label}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Trust indicators */}
-                        <div className="grid grid-cols-2 gap-4">
-                            {trustIndicators.map((indicator, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center space-x-2 bg-white/80 backdrop-blur-md rounded-xl p-3 border border-gray-200 shadow-sm hover:scale-105 transition-transform duration-300"
-                                >
-                                    <indicator.icon className={`w-5 h-5 ${indicator.color}`} />
-                                    <span className="text-gray-700 text-sm font-medium">{indicator.text}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+              <div className="relative z-10">
+                {/* Mobile Logo */}
+                <div className="lg:hidden text-center mb-8">
+                  <div className="w-20 h-20 bg-gradient-to-br from-teal-400 via-emerald-500 to-sky-500 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl">
+                    <Globe className="w-10 h-10 text-white" />
+                  </div>
+                  <h1 className="text-3xl font-black text-gray-900 mb-2">
+                    TourNexus
+                  </h1>
+                  <p className="text-teal-600">Join Us Today!</p>
                 </div>
 
-                {/* Right Side - Registration Form */}
-                <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
-                    <div className="w-full max-w-md">
-                        {/* Form Container */}
-                        <div className="bg-white/80 backdrop-blur-2xl rounded-3xl p-8 xl:p-10 shadow-2xl border border-white/50 relative overflow-hidden">
-                            {/* Decorative elements */}
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-teal-100/50 to-emerald-100/50 rounded-full blur-2xl"></div>
-                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-sky-100/50 to-purple-100/50 rounded-full blur-2xl"></div>
+                {/* Form Header */}
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center px-4 py-2 bg-teal-500/20 backdrop-blur-md rounded-full mb-6 border border-teal-400/30">
+                    <Sparkles className="w-4 h-4 mr-2 text-teal-300" />
+                    <span className="text-teal-600 text-sm font-semibold">
+                      Create Account
+                    </span>
+                  </div>
 
-                            <div className="relative z-10">
-                                {/* Mobile Logo */}
-                                <div className="lg:hidden text-center mb-8">
-                                    <div className="w-20 h-20 bg-gradient-to-br from-teal-400 via-emerald-500 to-sky-500 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl">
-                                        <Globe className="w-10 h-10 text-white" />
-                                    </div>
-                                    <h1 className="text-3xl font-black text-gray-900 mb-2">TourNexus</h1>
-                                    <p className="text-teal-600">Join Us Today!</p>
-                                </div>
-
-                                {/* Form Header */}
-                                <div className="text-center mb-8">
-                                    <div className="inline-flex items-center px-4 py-2 bg-teal-500/20 backdrop-blur-md rounded-full mb-6 border border-teal-400/30">
-                                        <Sparkles className="w-4 h-4 mr-2 text-teal-300" />
-                                        <span className="text-teal-600 text-sm font-semibold">Create Account</span>
-                                    </div>
-
-                                    <h2 className="text-3xl font-bold text-gray-900 mb-2 hidden lg:block">
-                                        Join TourNexus
-                                    </h2>
-                                    <p className="text-gray-600">
-                                        Begin your Sri Lankan adventure
-                                    </p>
-                                </div>
-
-
-
-                                {/* Registration Form */}
-                                <div className="space-y-6">
-                                    {/* Full Name Field */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                            Full Name
-                                        </label>
-                                        <div className="relative group">
-                                            <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
-                                            <input
-                                                type="text"
-                                                value={fullname}
-                                                onChange={(e) => setFullName(e.target.value)}
-                                                className="w-full pl-12 pr-4 py-4 bg-white/60 backdrop-blur-md border-2 border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:border-teal-400 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none"
-                                                placeholder="Enter your full name"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Email Field */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                            Email Address
-                                        </label>
-                                        <div className="relative group">
-                                            <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
-                                            <input
-                                                type="email"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                className="w-full pl-12 pr-4 py-4 bg-white/60 backdrop-blur-md border-2 border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:border-teal-400 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none"
-                                                placeholder="your@email.com"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Phone Field */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                            Phone Number
-                                        </label>
-                                        <div className="relative group">
-                                            <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
-                                            <input
-                                                type="tel"
-                                                value={phone}
-                                                onChange={(e) => setPhone(e.target.value)}
-                                                className="w-full pl-12 pr-4 py-4 bg-white/60 backdrop-blur-md border-2 border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:border-teal-400 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none"
-                                                placeholder="+94 71 123 4567"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* User Type Field */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                            I want to join as
-                                        </label>
-                                        <div className="relative group">
-                                            <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300 z-10" />
-                                            <select
-                                                value={role}
-                                                onChange={(e) => setRole(e.target.value)}
-                                                className="w-full pl-12 pr-4 py-4 bg-white/60 backdrop-blur-md border-2 border-gray-200 rounded-2xl text-gray-900 focus:border-teal-400 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none appearance-none"
-                                            >
-                                                <option value="">Select your role</option>
-                                                <option value="Tourist">Tourist</option>
-                                                <option value="Guide">Guide</option>
-                                                <option value="HotelOwner">Hotel Owner</option>
-                                                <option value="VehicleRental">Vehicle Rental</option>
-                                            </select>
-                                            <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                                        </div>
-                                    </div>
-
-                                    {/* Password Field */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                            Password
-                                        </label>
-                                        <div className="relative group">
-                                            <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
-                                            <input
-                                                type={showPassword ? "text" : "password"}
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full pl-12 pr-14 py-4 bg-white/60 backdrop-blur-md border-2 border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:border-teal-400 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none"
-                                                placeholder="Create a secure password"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-500 transition-colors duration-300"
-                                            >
-                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Confirm Password Field */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                            Confirm Password
-                                        </label>
-                                        <div className="relative group">
-                                            <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
-                                            <input
-                                                type={showConfirmPassword ? "text" : "password"}
-                                                value={confirmPassword}
-                                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                                className="w-full pl-12 pr-14 py-4 bg-white/60 backdrop-blur-md border-2 border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:border-teal-400 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none"
-                                                placeholder="Confirm your password"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-500 transition-colors duration-300"
-                                            >
-                                                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Submit Button */}
-                                    <div>
-                                        <button
-                                            onClick={handleRegister}
-                                            type="submit"
-                                            className="w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-sky-500 text-white py-4 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-teal-500/25 transition-all duration-500 flex items-center justify-center space-x-3 group hover:scale-105 active:scale-95 relative overflow-hidden"
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                            <span className="z-10">Sign In</span>
-                                            <ArrowRight className="w-5 h-5 z-10 group-hover:translate-x-1 transition-transform duration-300" />
-                                        </button>
-                                    </div>
-
-                                    {/* Login Link */}
-                                    <div className="text-center pt-6 border-t border-gray-200">
-                                        <p className="text-gray-600 mb-4">
-                                            Already have an account?
-                                        </p>
-                                        <Link
-                                            to="/login"
-                                            className="inline-flex items-center text-teal-600 hover:text-teal-700 font-semibold transition-colors duration-300 hover:underline group"
-                                        >
-                                            <span>Sign in here</span>
-                                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2 hidden lg:block">
+                    Join TourNexus
+                  </h2>
+                  <p className="text-gray-600">
+                    Begin your Sri Lankan adventure
+                  </p>
                 </div>
-            </div>
 
-            {/* Custom Styles */}
-            <style>{`
+                {/* Registration Form */}
+                <div className="space-y-6">
+                  {/* Full Name Field */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      Full Name
+                    </label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
+                      <input
+                        type="text"
+                        value={fullname}
+                        onChange={(e) => setFullName(e.target.value)}
+                        onBlur={() => handleFieldBlur("fullname")}
+                        className={`w-full pl-12 pr-4 py-4 bg-white/60 backdrop-blur-md border-2 rounded-2xl text-gray-900 placeholder-gray-500 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none ${
+                          errors.fullname && touched.fullname
+                            ? "border-red-400 focus:border-red-400"
+                            : "border-gray-200 focus:border-teal-400"
+                        }`}
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                    {errors.fullname && touched.fullname && (
+                      <p className="mt-2 text-sm text-red-600">
+                        {errors.fullname}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Email Field */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      Email Address
+                    </label>
+                    <div className="relative group">
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        onBlur={() => handleFieldBlur("email")}
+                        className={`w-full pl-12 pr-4 py-4 bg-white/60 backdrop-blur-md border-2 rounded-2xl text-gray-900 placeholder-gray-500 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none ${
+                          errors.email && touched.email
+                            ? "border-red-400 focus:border-red-400"
+                            : "border-gray-200 focus:border-teal-400"
+                        }`}
+                        placeholder="your@email.com"
+                      />
+                    </div>
+                    {errors.email && touched.email && (
+                      <p className="mt-2 text-sm text-red-600">
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Phone Field */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      Phone Number
+                    </label>
+                    <div className="relative group">
+                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        onBlur={() => handleFieldBlur("phone")}
+                        className={`w-full pl-12 pr-4 py-4 bg-white/60 backdrop-blur-md border-2 rounded-2xl text-gray-900 placeholder-gray-500 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none ${
+                          errors.phone && touched.phone
+                            ? "border-red-400 focus:border-red-400"
+                            : "border-gray-200 focus:border-teal-400"
+                        }`}
+                        placeholder="+1 234 567 8900"
+                      />
+                    </div>
+                    {errors.phone && touched.phone && (
+                      <p className="mt-2 text-sm text-red-600">
+                        {errors.phone}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* User Type Field */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      I want to join as
+                    </label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300 z-10" />
+                      <select
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        onBlur={() => handleFieldBlur("role")}
+                        className={`w-full pl-12 pr-4 py-4 bg-white/60 backdrop-blur-md border-2 rounded-2xl text-gray-900 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none appearance-none ${
+                          errors.role && touched.role
+                            ? "border-red-400 focus:border-red-400"
+                            : "border-gray-200 focus:border-teal-400"
+                        }`}
+                      >
+                        <option value="">Select your role</option>
+                        <option value="Tourist">Tourist</option>
+                        <option value="Guide">Guide</option>
+                        <option value="HotelOwner">Hotel Owner</option>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                    </div>
+                    {errors.role && touched.role && (
+                      <p className="mt-2 text-sm text-red-600">{errors.role}</p>
+                    )}
+                  </div>
+
+                  {/* Password Field */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      Password
+                    </label>
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        onBlur={() => handleFieldBlur("password")}
+                        className={`w-full pl-12 pr-14 py-4 bg-white/60 backdrop-blur-md border-2 rounded-2xl text-gray-900 placeholder-gray-500 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none ${
+                          errors.password && touched.password
+                            ? "border-red-400 focus:border-red-400"
+                            : "border-gray-200 focus:border-teal-400"
+                        }`}
+                        placeholder="Create a secure password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-500 transition-colors duration-300"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.password && touched.password && (
+                      <p className="mt-2 text-sm text-red-600">
+                        {errors.password}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Confirm Password Field */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      Confirm Password
+                    </label>
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-500 transition-colors duration-300" />
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        onBlur={() => handleFieldBlur("confirmPassword")}
+                        className={`w-full pl-12 pr-14 py-4 bg-white/60 backdrop-blur-md border-2 rounded-2xl text-gray-900 placeholder-gray-500 focus:ring-4 focus:ring-teal-400/20 transition-all duration-300 outline-none ${
+                          errors.confirmPassword && touched.confirmPassword
+                            ? "border-red-400 focus:border-red-400"
+                            : "border-gray-200 focus:border-teal-400"
+                        }`}
+                        placeholder="Confirm your password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-500 transition-colors duration-300"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.confirmPassword && touched.confirmPassword && (
+                      <p className="mt-2 text-sm text-red-600">
+                        {errors.confirmPassword}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Submit Button */}
+                  <div>
+                    <button
+                      onClick={handleRegister}
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-sky-500 text-white py-4 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-teal-500/25 transition-all duration-500 flex items-center justify-center space-x-3 group hover:scale-105 active:scale-95 relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <span className="z-10">Sign In</span>
+                      <ArrowRight className="w-5 h-5 z-10 group-hover:translate-x-1 transition-transform duration-300" />
+                    </button>
+                  </div>
+
+                  {/* Login Link */}
+                  <div className="text-center pt-6 border-t border-gray-200">
+                    <p className="text-gray-600 mb-4">
+                      Already have an account?
+                    </p>
+                    <Link
+                      to="/login"
+                      className="inline-flex items-center text-teal-600 hover:text-teal-700 font-semibold transition-colors duration-300 hover:underline group"
+                    >
+                      <span>Sign in here</span>
+                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Styles */}
+      <style>{`
                 @keyframes float-up {
                     0% {
                         transform: translateY(0px) translateX(0px);
@@ -440,6 +687,6 @@ export default function RegisterTouristDesign() {
                     }
                 }
             `}</style>
-        </div>
-    );
+    </div>
+  );
 }
