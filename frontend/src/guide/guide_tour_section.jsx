@@ -283,28 +283,29 @@ function EnhancedGuideTours() {
 
   // Format currency
   const formatCurrency = (amount) => {
-    return `$${parseFloat(amount || 0).toFixed(2)}`;
+    const numericAmount = Number.parseFloat(amount || 0);
+    return `LKR ${numericAmount.toLocaleString("en-LK")}`;
   };
 
   // Loading component
   const LoadingState = () => (
-    <div className="flex items-center justify-center py-12">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-      <span className="ml-3 text-gray-600">Loading bookings...</span>
+    <div className="booking-state">
+      <div className="booking-state__spinner"></div>
+      <span className="booking-state__text">Loading bookings...</span>
     </div>
   );
 
   // Error component
   const ErrorState = () => (
-    <div className="text-center py-12">
-      <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+    <div className="booking-state booking-state--error">
+      <AlertCircle className="booking-state__icon" />
       <h3 className="text-lg font-semibold text-gray-900 mb-2">
         Unable to Load Bookings
       </h3>
       <p className="text-gray-600 mb-4">{error}</p>
       <button
         onClick={fetchGuideBookings}
-        className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+        className="booking-btn booking-btn--primary"
       >
         Try Again
       </button>
@@ -313,183 +314,151 @@ function EnhancedGuideTours() {
 
   // Booking detail modal
   const BookingDetailModal = ({ booking, onClose }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Booking Details
-              </h2>
-              <p className="text-sm text-gray-600">
-                #{booking.guide_booking_id}
-              </p>
+    <div className="booking-modal-overlay">
+      <div className="booking-modal">
+        <div className="booking-modal__header">
+          <div>
+            <div className="booking-modal__eyebrow">Booking details</div>
+            <h2 className="booking-modal__title">
+              Reference #{booking.guide_booking_id}
+            </h2>
+            <div className="booking-modal__meta">
+              {getStatusBadge(booking.booking_status)}
+              <span className="booking-modal__chip">
+                Guests: {booking.no_of_guests_count}
+              </span>
+              <span className="booking-modal__chip">
+                {formatDate(booking.check_in_date)} -{" "}
+                {formatDate(booking.check_out_date)}
+              </span>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
           </div>
+          <button onClick={onClose} className="booking-modal__close">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Status and Actions */}
-          <div className="flex justify-between items-center">
-            {getStatusBadge(booking.booking_status)}
-            {booking.booking_status === "requested" && (
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleAcceptBooking(booking.guide_booking_id)}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
-                >
-                  <Check className="w-4 h-4 mr-1" />
-                  Accept
-                </button>
-                <button
-                  onClick={() => handleRejectBooking(booking.guide_booking_id)}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center"
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Reject
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Tourist Information */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-              <User className="w-4 h-4 mr-2" />
-              Tourist Information
+        <div className="booking-modal__body">
+          <section className="booking-modal__section">
+            <h3 className="booking-modal__section-title">
+              <User className="w-4 h-4" />
+              Tourist information
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="booking-modal__grid">
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Name
-                </label>
-                <p className="text-gray-900">
-                  {booking.tourist_info?.fullname || "N/A"}
-                </p>
+                <label>Name</label>
+                <p>{booking.tourist_info?.fullname || "N/A"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Phone
-                </label>
-                <p className="text-gray-900">
-                  {booking.tourist_info?.phone || "N/A"}
-                </p>
+                <label>Phone</label>
+                <p>{booking.tourist_info?.phone || "N/A"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Email
-                </label>
-                <p className="text-gray-900">{booking.email}</p>
+                <label>Email</label>
+                <p>{booking.email}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Nationality
-                </label>
-                <p className="text-gray-900">{booking.nationality}</p>
+                <label>Nationality</label>
+                <p>{booking.nationality}</p>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Booking Details */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              Booking Details
+          <section className="booking-modal__section">
+            <h3 className="booking-modal__section-title">
+              <Calendar className="w-4 h-4" />
+              Booking details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="booking-modal__grid">
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Check-in Date
-                </label>
-                <p className="text-gray-900">
-                  {formatDate(booking.check_in_date)}
-                </p>
+                <label>Check-in date</label>
+                <p>{formatDate(booking.check_in_date)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Check-out Date
-                </label>
-                <p className="text-gray-900">
-                  {formatDate(booking.check_out_date)}
-                </p>
+                <label>Check-out date</label>
+                <p>{formatDate(booking.check_out_date)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Duration
-                </label>
-                <p className="text-gray-900">{booking.days_count} days</p>
+                <label>Duration</label>
+                <p>{booking.days_count} days</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Number of Guests
-                </label>
-                <p className="text-gray-900">
-                  {booking.no_of_guests_count} guests
-                </p>
+                <label>Guests</label>
+                <p>{booking.no_of_guests_count} guests</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Daily Rate
-                </label>
-                <p className="text-gray-900">
-                  {formatCurrency(booking.price_per_day)}
-                </p>
+                <label>Daily rate</label>
+                <p>{formatCurrency(booking.price_per_day)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Total Amount
-                </label>
-                <p className="text-gray-900 font-semibold">
+                <label>Total amount</label>
+                <p className="booking-modal__total">
                   {formatCurrency(booking.total_amount)}
                 </p>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Emergency Contact */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-              <Phone className="w-4 h-4 mr-2" />
-              Emergency Contact
-            </h3>
-            <p className="text-gray-900">{booking.emergency_contact}</p>
-          </div>
-
-          {/* Special Requests */}
-          {booking.special_requests && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-3">
-                Special Requests
+          <section className="booking-modal__section booking-modal__section--inline">
+            <div>
+              <h3 className="booking-modal__section-title">
+                <Phone className="w-4 h-4" />
+                Emergency contact
               </h3>
-              <p className="text-gray-900">{booking.special_requests}</p>
+              <p>{booking.emergency_contact}</p>
             </div>
-          )}
-
-          {/* Rejection Reason */}
-          {booking.booking_status === "cancelled" &&
-            booking.rejection_reason && (
-              <div className="bg-red-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-red-900 mb-3">
-                  Rejection Reason
+            {booking.special_requests && (
+              <div>
+                <h3 className="booking-modal__section-title">
+                  Special requests
                 </h3>
-                <p className="text-red-800">{booking.rejection_reason}</p>
+                <p>{booking.special_requests}</p>
               </div>
             )}
+          </section>
+
+          {booking.booking_status === "cancelled" &&
+            booking.rejection_reason && (
+              <section className="booking-modal__section booking-modal__section--alert">
+                <h3 className="booking-modal__section-title">
+                  Rejection reason
+                </h3>
+                <p>{booking.rejection_reason}</p>
+              </section>
+            )}
+        </div>
+
+        <div className="booking-modal__footer">
+          <button className="booking-btn booking-btn--ghost" onClick={onClose}>
+            Close
+          </button>
+          {booking.booking_status === "requested" && (
+            <div className="booking-modal__actions">
+              <button
+                onClick={() => handleAcceptBooking(booking.guide_booking_id)}
+                className="booking-btn booking-btn--success"
+              >
+                <Check className="w-4 h-4 mr-1" />
+                Accept booking
+              </button>
+              <button
+                onClick={() => handleRejectBooking(booking.guide_booking_id)}
+                className="booking-btn booking-btn--danger"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Reject booking
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-6">
+    <div className="guide-bookings space-y-6">
       {/* Header with Stats */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="booking-panel booking-panel--header">
         <div className="flex justify-between items-start mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Tour Bookings</h1>
@@ -500,7 +469,7 @@ function EnhancedGuideTours() {
           <button
             onClick={fetchGuideBookings}
             disabled={isLoading}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center"
+            className="booking-btn booking-btn--primary disabled:opacity-50 flex items-center"
           >
             <RefreshCw
               className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
@@ -511,47 +480,37 @@ function EnhancedGuideTours() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
-              {stats.total}
-            </div>
-            <div className="text-sm text-blue-700">Total Bookings</div>
+          <div className="booking-stat booking-stat--total">
+            <div className="booking-stat__value">{stats.total}</div>
+            <div className="booking-stat__label">Total Bookings</div>
           </div>
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-yellow-600">
-              {stats.requested}
-            </div>
-            <div className="text-sm text-yellow-700">Pending</div>
+          <div className="booking-stat booking-stat--pending">
+            <div className="booking-stat__value">{stats.requested}</div>
+            <div className="booking-stat__label">Pending</div>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
-              {stats.confirmed}
-            </div>
-            <div className="text-sm text-green-700">Confirmed</div>
+          <div className="booking-stat booking-stat--confirmed">
+            <div className="booking-stat__value">{stats.confirmed}</div>
+            <div className="booking-stat__label">Confirmed</div>
           </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">
-              {stats.completed}
-            </div>
-            <div className="text-sm text-purple-700">Completed</div>
+          <div className="booking-stat booking-stat--completed">
+            <div className="booking-stat__value">{stats.completed}</div>
+            <div className="booking-stat__label">Completed</div>
           </div>
-          <div className="bg-red-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">
-              {stats.cancelled}
-            </div>
-            <div className="text-sm text-red-700">Cancelled</div>
+          <div className="booking-stat booking-stat--cancelled">
+            <div className="booking-stat__value">{stats.cancelled}</div>
+            <div className="booking-stat__label">Cancelled</div>
           </div>
-          <div className="bg-emerald-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-emerald-600">
+          <div className="booking-stat booking-stat--revenue">
+            <div className="booking-stat__value">
               {formatCurrency(stats.totalRevenue)}
             </div>
-            <div className="text-sm text-emerald-700">Revenue</div>
+            <div className="booking-stat__label">Revenue</div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="booking-panel booking-panel--filters">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -562,7 +521,7 @@ function EnhancedGuideTours() {
               placeholder="Search by booking ID, tourist name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="booking-input"
             />
           </div>
           <div>
@@ -572,7 +531,7 @@ function EnhancedGuideTours() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="booking-select"
             >
               <option value="all">All Statuses</option>
               <option value="requested">Pending Requests</option>
@@ -588,7 +547,7 @@ function EnhancedGuideTours() {
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="booking-select"
             >
               <option value="all">All Dates</option>
               <option value="upcoming">Upcoming Tours</option>
@@ -600,7 +559,7 @@ function EnhancedGuideTours() {
       </div>
 
       {/* Bookings List */}
-      <div className="bg-white rounded-xl shadow-sm">
+      <div className="booking-panel booking-panel--list">
         {isLoading && <LoadingState />}
         {error && !isLoading && <ErrorState />}
 
@@ -623,7 +582,7 @@ function EnhancedGuideTours() {
                 {filteredBookings.map((booking) => (
                   <div
                     key={booking.guide_booking_id}
-                    className="p-6 hover:bg-gray-50 transition-colors"
+                    className="booking-row"
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
@@ -678,7 +637,7 @@ function EnhancedGuideTours() {
                               setSelectedBooking(booking);
                               setShowBookingDetails(true);
                             }}
-                            className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-200 transition-colors flex items-center text-sm"
+                            className="booking-btn booking-btn--ghost flex items-center text-sm"
                           >
                             <Eye className="w-4 h-4 mr-1" />
                             View Details
@@ -690,7 +649,7 @@ function EnhancedGuideTours() {
                                 onClick={() =>
                                   handleAcceptBooking(booking.guide_booking_id)
                                 }
-                                className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm"
+                                className="booking-btn booking-btn--success flex items-center text-sm"
                               >
                                 <Check className="w-4 h-4 mr-1" />
                                 Accept
@@ -699,7 +658,7 @@ function EnhancedGuideTours() {
                                 onClick={() =>
                                   handleRejectBooking(booking.guide_booking_id)
                                 }
-                                className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition-colors flex items-center text-sm"
+                                className="booking-btn booking-btn--danger flex items-center text-sm"
                               >
                                 <X className="w-4 h-4 mr-1" />
                                 Reject
@@ -712,7 +671,7 @@ function EnhancedGuideTours() {
                               onClick={() =>
                                 window.open(`mailto:${booking.email}`, "_blank")
                               }
-                              className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm"
+                              className="booking-btn booking-btn--info flex items-center text-sm"
                             >
                               <Mail className="w-4 h-4 mr-1" />
                               Contact Tourist
@@ -739,6 +698,355 @@ function EnhancedGuideTours() {
           }}
         />
       )}
+
+      <style jsx>{`
+        :root {
+          --panel: rgba(255, 255, 255, 0.92);
+          --panel-border: rgba(15, 23, 42, 0.08);
+          --ink: #1f2937;
+          --muted: #5b6472;
+          --brand: #0f766e;
+          --accent: #d97706;
+          --danger: #b42318;
+          --shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+          --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.08);
+          --ring: 0 0 0 4px rgba(15, 118, 110, 0.15);
+        }
+
+        .guide-bookings {
+          color: var(--ink);
+        }
+
+        .booking-panel {
+          background: var(--panel);
+          border: 1px solid var(--panel-border);
+          border-radius: 18px;
+          box-shadow: var(--shadow-soft);
+          padding: 24px;
+        }
+
+        .booking-panel--list {
+          padding: 0;
+          overflow: hidden;
+        }
+
+        .booking-stat {
+          border: 1px solid var(--panel-border);
+          border-radius: 14px;
+          padding: 14px;
+          background: #fff;
+        }
+
+        .booking-stat__value {
+          font-size: 22px;
+          font-weight: 700;
+          color: var(--brand);
+        }
+
+        .booking-stat__label {
+          font-size: 12px;
+          color: var(--muted);
+          margin-top: 6px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+        }
+
+        .booking-stat--pending .booking-stat__value {
+          color: #b45309;
+        }
+
+        .booking-stat--confirmed .booking-stat__value {
+          color: #15803d;
+        }
+
+        .booking-stat--completed .booking-stat__value {
+          color: #7c3aed;
+        }
+
+        .booking-stat--cancelled .booking-stat__value {
+          color: var(--danger);
+        }
+
+        .booking-stat--revenue .booking-stat__value {
+          color: var(--accent);
+        }
+
+        .booking-input,
+        .booking-select {
+          width: 100%;
+          padding: 12px 14px;
+          border-radius: 12px;
+          border: 1px solid var(--panel-border);
+          background: #fff;
+          color: var(--ink);
+        }
+
+        .booking-input:focus,
+        .booking-select:focus {
+          outline: none;
+          box-shadow: var(--ring);
+          border-color: rgba(15, 118, 110, 0.4);
+        }
+
+        .booking-btn {
+          border-radius: 10px;
+          padding: 10px 14px;
+          font-weight: 600;
+          border: 1px solid transparent;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .booking-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-soft);
+        }
+
+        .booking-btn--primary {
+          background: linear-gradient(135deg, var(--brand), #1e9e8b);
+          color: #fff;
+        }
+
+        .booking-btn--ghost {
+          background: #fff;
+          color: var(--muted);
+          border-color: var(--panel-border);
+        }
+
+        .booking-btn--success {
+          background: #16a34a;
+          color: #fff;
+        }
+
+        .booking-btn--danger {
+          background: #dc2626;
+          color: #fff;
+        }
+
+        .booking-btn--info {
+          background: #2563eb;
+          color: #fff;
+        }
+
+        .booking-row {
+          padding: 22px 24px;
+          transition: background 0.2s ease;
+        }
+
+        .booking-row:hover {
+          background: rgba(15, 118, 110, 0.05);
+        }
+
+        .booking-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 16px;
+          text-align: center;
+          gap: 10px;
+        }
+
+        .booking-state__spinner {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 3px solid rgba(15, 118, 110, 0.2);
+          border-top-color: var(--brand);
+          animation: spin 0.9s linear infinite;
+        }
+
+        .booking-state__text {
+          color: var(--muted);
+        }
+
+        .booking-state__icon {
+          width: 42px;
+          height: 42px;
+          color: var(--danger);
+        }
+
+        .booking-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(15, 23, 42, 0.45);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          z-index: 1000;
+          backdrop-filter: blur(6px);
+        }
+
+        .booking-modal {
+          width: min(900px, 100%);
+          background: var(--panel);
+          border: 1px solid var(--panel-border);
+          border-radius: 22px;
+          box-shadow: var(--shadow);
+          overflow: hidden;
+        }
+
+        .booking-modal__header {
+          padding: 24px 26px 18px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 20px;
+          border-bottom: 1px solid var(--panel-border);
+          background: linear-gradient(
+            135deg,
+            rgba(15, 118, 110, 0.12),
+            rgba(217, 119, 6, 0.08)
+          );
+        }
+
+        .booking-modal__eyebrow {
+          font-size: 12px;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--muted);
+          font-weight: 700;
+          margin-bottom: 6px;
+        }
+
+        .booking-modal__title {
+          font-size: 22px;
+          font-weight: 700;
+          color: var(--ink);
+          margin-bottom: 12px;
+        }
+
+        .booking-modal__meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .booking-modal__chip {
+          padding: 6px 10px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.8);
+          border: 1px solid rgba(15, 23, 42, 0.08);
+          color: var(--muted);
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .booking-modal__close {
+          border: none;
+          background: #fff;
+          border-radius: 10px;
+          padding: 8px;
+          color: var(--muted);
+          cursor: pointer;
+          box-shadow: var(--shadow-soft);
+        }
+
+        .booking-modal__body {
+          padding: 22px 26px;
+          display: grid;
+          gap: 18px;
+        }
+
+        .booking-modal__section {
+          background: #fff;
+          border-radius: 16px;
+          border: 1px solid var(--panel-border);
+          padding: 16px 18px;
+        }
+
+        .booking-modal__section-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--ink);
+          margin-bottom: 12px;
+        }
+
+        .booking-modal__grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 14px;
+        }
+
+        .booking-modal__grid label {
+          display: block;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          color: var(--muted);
+          margin-bottom: 6px;
+          font-weight: 600;
+        }
+
+        .booking-modal__grid p {
+          color: var(--ink);
+          font-weight: 600;
+        }
+
+        .booking-modal__total {
+          color: var(--brand);
+          font-weight: 700;
+        }
+
+        .booking-modal__section--inline {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        }
+
+        .booking-modal__section--alert {
+          border-color: rgba(244, 63, 94, 0.2);
+          background: rgba(244, 63, 94, 0.08);
+          color: var(--danger);
+        }
+
+        .booking-modal__footer {
+          padding: 18px 26px 24px;
+          border-top: 1px solid var(--panel-border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          background: #fff;
+        }
+
+        .booking-modal__actions {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 700px) {
+          .booking-modal__header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .booking-modal__footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+          }
+
+          .booking-modal__actions {
+            width: 100%;
+          }
+
+          .booking-modal__actions .booking-btn {
+            flex: 1 1 auto;
+          }
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </div>
   );
 }

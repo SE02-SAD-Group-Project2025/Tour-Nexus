@@ -8,6 +8,12 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    if (!window.confirm("Are you sure you want to logout?")) {
+      return;
+    }
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
     navigate("/login");
   };
 

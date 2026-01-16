@@ -26,6 +26,7 @@ import {
   Coffee,
   Utensils,
   Shield,
+  AlertCircle,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -51,6 +52,8 @@ function HotelOwnerDashboard() {
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState(null);
   const [selectedHotelId, setSelectedHotelId] = useState(null);
+  const [hotelFilter, setHotelFilter] = useState("all");
+  const [hotelSearch, setHotelSearch] = useState("");
 
   const userEmail = localStorage.getItem("email");
 
@@ -76,14 +79,14 @@ function HotelOwnerDashboard() {
   };
 
   const sidebarItems = [
-    { name: "Dashboard", icon: Activity, emoji: "📊" },
-    { name: "My Hotels", icon: Building, emoji: "🏨" },
-    { name: "Bookings", icon: Calendar, emoji: "📅" },
-    // { name: 'Reports', icon: BarChart3, emoji: '📊' },
-    // { name: 'Messages', icon: MessageCircle, emoji: '💬' },
-    { name: "Profile", icon: User, emoji: "👤" },
-    // { name: 'Settings', icon: Settings, emoji: '⚙️' },
-    { name: "Logout", icon: LogOut, emoji: "🚪" },
+    { name: "Dashboard", icon: Activity },
+    { name: "My Hotels", icon: Building },
+    { name: "Bookings", icon: Calendar },
+    // { name: "Reports", icon: BarChart3 },
+    // { name: "Messages", icon: MessageCircle },
+    { name: "Profile", icon: User },
+    // { name: "Settings", icon: Settings },
+    { name: "Logout", icon: LogOut },
   ];
 
   // Logout function
@@ -601,7 +604,7 @@ function HotelOwnerDashboard() {
   // Error State Component
   const ErrorState = () => (
     <div className="error-state">
-      <div style={{ fontSize: "48px", marginBottom: "20px" }}>⚠️</div>
+      <AlertCircle className="error-icon" />
       <h3>Unable to Load Hotels</h3>
       <p>{error}</p>
       <div
@@ -736,7 +739,7 @@ function HotelOwnerDashboard() {
         <div className="contact-info">
           {hotel.contact_number && (
             <div className="detail-item">
-              <span>📞 {hotel.contact_number}</span>
+              <span>Contact: {hotel.contact_number}</span>
             </div>
           )}
           {hotel.parking_available && (
@@ -875,7 +878,7 @@ function HotelOwnerDashboard() {
                 className="action-card"
                 onClick={() => handleMenuItemClick("My Hotels")}
               >
-                <h3>🏨 Manage Hotels ({stats.totalHotels})</h3>
+                <h3>Manage Hotels ({stats.totalHotels})</h3>
                 <p>View and edit your properties</p>
                 {stats.pendingHotels > 0 && (
                   <div
@@ -894,7 +897,7 @@ function HotelOwnerDashboard() {
                 className="action-card"
                 onClick={() => handleMenuItemClick("Bookings")}
               >
-                <h3>📅 View Bookings</h3>
+                <h3>View Bookings</h3>
                 <p>Check recent reservations</p>
               </div>
 
@@ -903,23 +906,23 @@ function HotelOwnerDashboard() {
                   to="/addhotel"
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
-                  <h3>➕ Add New Hotel</h3>
+                  <h3>Add New Hotel</h3>
                   <p>Expand your portfolio</p>
                 </Link>
               </div>
 
               {/* <div className="action-card" onClick={() => handleMenuItemClick('Reports')}>
-                                <h3>📊 View Reports</h3>
+                                <h3>View Reports</h3>
                                 <p>Analytics and insights</p>
                             </div> */}
 
               {/* <div className="action-card" onClick={() => handleMenuItemClick('Messages')}>
-                                <h3>💬 Messages</h3>
+                                <h3>Messages</h3>
                                 <p>Guest communications</p>
                             </div> */}
 
               {/* <div className="action-card" onClick={() => handleMenuItemClick('Settings')}>
-                                <h3>⚙️ Settings</h3>
+                                <h3>Settings</h3>
                                 <p>Account preferences</p>
                             </div> */}
             </div>
@@ -929,19 +932,39 @@ function HotelOwnerDashboard() {
     }
 
     if (activeMenuItem === "My Hotels") {
+      const normalizedSearch = hotelSearch.trim().toLowerCase();
+      const visibleHotels = hotels.filter((hotel) => {
+        const matchesFilter =
+          hotelFilter === "all" || hotel.status === hotelFilter;
+        const matchesSearch =
+          normalizedSearch.length === 0 ||
+          hotel.hotel_name?.toLowerCase().includes(normalizedSearch) ||
+          hotel.city?.toLowerCase().includes(normalizedSearch) ||
+          hotel.hotel_id?.toLowerCase().includes(normalizedSearch);
+        return matchesFilter && matchesSearch;
+      });
+
       return (
         <div className="hotels-page">
           {/* Enhanced Header Section */}
-          <div className="page-header">
+          <div className="page-header hotel-page-header">
             <div>
               <h1>My Hotels</h1>
               <p>Manage your hotel properties and portfolio</p>
               {hotels.length > 0 && (
                 <div className="hotel-summary">
-                  <span>Total: {stats.totalHotels} hotels | </span>
-                  <span>Approved: {stats.approvedHotels} | </span>
-                  <span>Pending: {stats.pendingHotels} | </span>
-                  <span>Rejected: {stats.rejectedHotels}</span>
+                  <span className="summary-pill">
+                    Total {stats.totalHotels}
+                  </span>
+                  <span className="summary-pill success">
+                    Approved {stats.approvedHotels}
+                  </span>
+                  <span className="summary-pill warning">
+                    Pending {stats.pendingHotels}
+                  </span>
+                  <span className="summary-pill danger">
+                    Rejected {stats.rejectedHotels}
+                  </span>
                 </div>
               )}
             </div>
@@ -955,11 +978,56 @@ function HotelOwnerDashboard() {
               </button>
               <Link
                 to="/addhotel"
-                className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center text-decoration-none"
+                className="btn btn-primary hotel-add-btn text-decoration-none"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Add New Hotel
               </Link>
+            </div>
+          </div>
+
+          <div className="hotel-toolbar">
+            <div className="hotel-search">
+              <input
+                type="text"
+                placeholder="Search by hotel name, city, or ID..."
+                value={hotelSearch}
+                onChange={(e) => setHotelSearch(e.target.value)}
+              />
+            </div>
+            <div className="hotel-filters">
+              <button
+                className={`filter-pill ${
+                  hotelFilter === "all" ? "active" : ""
+                }`}
+                onClick={() => setHotelFilter("all")}
+              >
+                All
+              </button>
+              <button
+                className={`filter-pill ${
+                  hotelFilter === "approved" ? "active" : ""
+                }`}
+                onClick={() => setHotelFilter("approved")}
+              >
+                Approved
+              </button>
+              <button
+                className={`filter-pill ${
+                  hotelFilter === "pending" ? "active" : ""
+                }`}
+                onClick={() => setHotelFilter("pending")}
+              >
+                Pending
+              </button>
+              <button
+                className={`filter-pill ${
+                  hotelFilter === "rejected" ? "active" : ""
+                }`}
+                onClick={() => setHotelFilter("rejected")}
+              >
+                Rejected
+              </button>
             </div>
           </div>
 
@@ -985,8 +1053,14 @@ function HotelOwnerDashboard() {
                     Add Your First Hotel
                   </Link>
                 </div>
+              ) : visibleHotels.length === 0 ? (
+                <div className="no-hotels">
+                  <Building className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3>No matching hotels</h3>
+                  <p>Try adjusting your search or filters.</p>
+                </div>
               ) : (
-                hotels.map((hotel) => (
+                visibleHotels.map((hotel) => (
                   <HotelCard key={hotel.hotel_id} hotel={hotel} />
                 ))
               )}
@@ -1221,6 +1295,7 @@ function HotelOwnerDashboard() {
   return (
     <div>
       <style jsx>{`
+        @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap");
         * {
           margin: 0;
           padding: 0;
@@ -2442,6 +2517,435 @@ function HotelOwnerDashboard() {
             width: 100%;
           }
         }
+
+        :root {
+          --bg: #f4efe6;
+          --bg-2: #e6f1ea;
+          --panel: rgba(255, 255, 255, 0.92);
+          --panel-border: rgba(15, 23, 42, 0.08);
+          --ink: #1f2937;
+          --muted: #5b6472;
+          --brand: #0f766e;
+          --accent: #d97706;
+          --danger: #b42318;
+          --shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+          --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.08);
+          --ring: 0 0 0 4px rgba(15, 118, 110, 0.15);
+        }
+
+        body {
+          font-family: "Manrope", "Segoe UI", Tahoma, sans-serif;
+          background: linear-gradient(135deg, var(--bg), var(--bg-2));
+          color: var(--ink);
+        }
+
+        .main-container {
+          background: transparent;
+          position: relative;
+        }
+
+        .main-container::before,
+        .main-container::after {
+          content: "";
+          position: fixed;
+          width: 360px;
+          height: 360px;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .main-container::before {
+          top: -140px;
+          right: -140px;
+          background: radial-gradient(
+            circle at 30% 30%,
+            rgba(15, 118, 110, 0.18),
+            transparent 60%
+          );
+        }
+
+        .main-container::after {
+          bottom: -160px;
+          left: -140px;
+          background: radial-gradient(
+            circle at 70% 30%,
+            rgba(217, 119, 6, 0.18),
+            transparent 60%
+          );
+        }
+
+        .header {
+          background: var(--panel);
+          border-bottom: 1px solid var(--panel-border);
+          box-shadow: var(--shadow-soft);
+          backdrop-filter: blur(14px);
+        }
+
+        .logo {
+          color: var(--brand);
+          letter-spacing: -0.01em;
+        }
+
+        .search-bar input {
+          background: #fff;
+          border: 1px solid var(--panel-border);
+          border-radius: 999px;
+          padding: 12px 16px;
+          color: var(--ink);
+        }
+
+        .user-profile {
+          border-radius: 999px;
+          padding: 8px 14px;
+          border: 1px solid var(--panel-border);
+          box-shadow: var(--shadow-soft);
+          background: #fff;
+          gap: 8px;
+        }
+
+        .dropdown-menu {
+          border-radius: 12px;
+          border: 1px solid var(--panel-border);
+          box-shadow: var(--shadow);
+          overflow: hidden;
+        }
+
+        .dropdown-item:hover {
+          background: rgba(15, 118, 110, 0.08);
+        }
+
+        .sidebar {
+          background: var(--panel);
+          border-right: 1px solid var(--panel-border);
+          box-shadow: var(--shadow-soft);
+        }
+
+        .sidebar-item {
+          margin: 6px 10px;
+          border-radius: 12px;
+          border: 1px solid transparent;
+        }
+
+        .sidebar-item svg {
+          color: var(--muted);
+        }
+
+        .sidebar-item.active {
+          background: linear-gradient(135deg, var(--brand), #1e9e8b);
+          color: #fff;
+          border-color: transparent;
+        }
+
+        .sidebar-item.active svg {
+          color: #fff;
+        }
+
+        .main-content {
+          background: transparent;
+          padding: 32px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .welcome-section,
+        .bookings-header {
+          border-radius: 18px;
+          background: linear-gradient(135deg, var(--brand), var(--accent));
+          color: #fff;
+          box-shadow: var(--shadow);
+        }
+
+        .hotel-select {
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          background: rgba(255, 255, 255, 0.95);
+        }
+
+        .stat-card,
+        .action-card,
+        .hotel-card,
+        .booking-card,
+        .profile-card,
+        .loading-state,
+        .error-state,
+        .placeholder-card {
+          border-radius: 16px;
+          border: 1px solid var(--panel-border);
+          background: var(--panel);
+          box-shadow: var(--shadow-soft);
+        }
+
+        .stat-card .number {
+          color: var(--brand);
+        }
+
+        .hotel-card {
+          overflow: hidden;
+        }
+
+        .hotel-image {
+          background: linear-gradient(
+            135deg,
+            rgba(15, 118, 110, 0.12),
+            rgba(217, 119, 6, 0.08)
+          );
+        }
+
+        .room-type-tag {
+          background: rgba(15, 118, 110, 0.12);
+          color: var(--brand);
+          border: 1px solid rgba(15, 118, 110, 0.2);
+        }
+
+        .status-badge {
+          border-radius: 999px;
+          padding: 6px 10px;
+        }
+
+        .action-btn.primary {
+          background: linear-gradient(135deg, var(--brand), #1e9e8b);
+          color: #fff;
+        }
+
+        .action-btn.secondary {
+          background: #fff;
+          border: 1px solid var(--panel-border);
+          color: var(--muted);
+        }
+
+        .action-btn.danger {
+          background: #fee2e2;
+          color: var(--danger);
+          border: 1px solid #fecaca;
+        }
+
+        .booking-card {
+          transform: perspective(1200px) rotateX(2deg) rotateY(0);
+        }
+
+        .booking-card:hover {
+          transform: perspective(1200px) rotateX(0) rotateY(4deg)
+            translateY(-6px);
+        }
+
+        .error-icon {
+          width: 46px;
+          height: 46px;
+          color: var(--danger);
+          margin-bottom: 16px;
+        }
+
+        .spinner {
+          border-top-color: var(--brand);
+        }
+
+        .profile-item label {
+          color: var(--ink);
+        }
+
+        .profile-item span {
+          color: var(--muted);
+        }
+
+        .profile-item input,
+        .profile-item select,
+        .profile-item textarea {
+          border-radius: 12px;
+          border: 1px solid var(--panel-border);
+          padding: 12px;
+        }
+
+        .profile-item input:focus,
+        .profile-item select:focus,
+        .profile-item textarea:focus {
+          outline: none;
+          box-shadow: var(--ring);
+          border-color: rgba(15, 118, 110, 0.4);
+        }
+
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .stat-card,
+        .action-card,
+        .hotel-card,
+        .booking-card {
+          animation: fadeUp 0.6s ease both;
+        }
+
+        .stat-card:nth-child(2),
+        .action-card:nth-child(2),
+        .hotel-card:nth-child(2),
+        .booking-card:nth-child(2) {
+          animation-delay: 0.05s;
+        }
+
+        .stat-card:nth-child(3),
+        .action-card:nth-child(3),
+        .hotel-card:nth-child(3),
+        .booking-card:nth-child(3) {
+          animation-delay: 0.1s;
+        }
+
+        .btn {
+          border-radius: 12px;
+          font-weight: 600;
+          padding: 12px 18px;
+          border: 1px solid var(--panel-border);
+          background: #fff;
+          color: var(--ink);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-soft);
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, var(--brand), #1e9e8b);
+          color: #fff;
+          border: none;
+        }
+
+        .btn-secondary {
+          background: #fff;
+          color: var(--muted);
+          border: 1px solid var(--panel-border);
+        }
+
+        .hotel-page-header {
+          background: var(--panel);
+          border: 1px solid var(--panel-border);
+          border-radius: 18px;
+          padding: 26px;
+          box-shadow: var(--shadow-soft);
+        }
+
+        .hotel-summary {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 12px;
+        }
+
+        .summary-pill {
+          padding: 6px 12px;
+          border-radius: 999px;
+          background: rgba(15, 118, 110, 0.12);
+          color: var(--brand);
+          font-size: 12px;
+          font-weight: 600;
+          border: 1px solid rgba(15, 118, 110, 0.2);
+        }
+
+        .summary-pill.warning {
+          background: rgba(217, 119, 6, 0.12);
+          color: var(--accent);
+          border-color: rgba(217, 119, 6, 0.2);
+        }
+
+        .summary-pill.success {
+          background: rgba(16, 185, 129, 0.12);
+          color: #059669;
+          border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .summary-pill.danger {
+          background: rgba(244, 63, 94, 0.12);
+          color: var(--danger);
+          border-color: rgba(244, 63, 94, 0.2);
+        }
+
+        .hotel-toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 16px;
+          align-items: center;
+          justify-content: space-between;
+          margin: 18px 0 10px;
+        }
+
+        .hotel-search {
+          flex: 1 1 280px;
+        }
+
+        .hotel-search input {
+          width: 100%;
+          border-radius: 12px;
+          border: 1px solid var(--panel-border);
+          padding: 12px 14px;
+          background: #fff;
+        }
+
+        .hotel-search input:focus {
+          outline: none;
+          box-shadow: var(--ring);
+          border-color: rgba(15, 118, 110, 0.4);
+        }
+
+        .hotel-filters {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .filter-pill {
+          border-radius: 999px;
+          padding: 8px 14px;
+          border: 1px solid var(--panel-border);
+          background: #fff;
+          color: var(--muted);
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .filter-pill.active {
+          background: linear-gradient(135deg, var(--brand), #1e9e8b);
+          color: #fff;
+          border-color: transparent;
+          box-shadow: var(--shadow-soft);
+        }
+
+        .hotels-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 20px;
+        }
+
+        .no-hotels {
+          background: var(--panel);
+          border: 1px dashed var(--panel-border);
+          border-radius: 16px;
+          padding: 40px 20px;
+          text-align: center;
+          grid-column: 1 / -1;
+        }
+
+        @media (max-width: 900px) {
+          .main-content {
+            padding: 24px;
+          }
+
+          .sidebar {
+            width: 220px;
+          }
+        }
       `}</style>
 
       <div className="header">
@@ -2456,7 +2960,8 @@ function HotelOwnerDashboard() {
 
         <div className="user-section">
           <div className="user-profile" onClick={toggleDropdown}>
-            <span style={{ marginLeft: "5px" }}>🔄Change Account▼</span>
+            <span style={{ marginLeft: "5px" }}>Change Account</span>
+            <ChevronDown className="w-4 h-4" />
 
             <div className={`dropdown-menu ${showDropdown ? "show" : ""}`}>
               <div className="dropdown-header">Switch Account</div>
@@ -2488,7 +2993,7 @@ function HotelOwnerDashboard() {
               }`}
               onClick={() => handleMenuItemClick(item.name)}
             >
-              <span>{item.emoji}</span>
+              <item.icon className="w-5 h-5" />
               <span>{item.name}</span>
             </div>
           ))}
