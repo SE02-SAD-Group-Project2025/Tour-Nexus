@@ -1,5 +1,5 @@
 import express from 'express';
-import { addHotel, approveHotel, deleteHotel, getApprovedHotels, getHotelByIdWithAvailability, getHotelsByHotelOwner, getHotelStats, getPendingHotels, rejectHotel, searchHotels, updateHotels, view_all_hotels } from '../controllers/hotelcontroller.js';
+import { addHotel, approveHotel, deleteHotel, getApprovedHotels, getHotelById, getHotelByIdWithAvailability, getHotelsByHotelOwner, getHotelStats, getPendingHotels, rejectHotel, searchHotels, updateHotels, view_all_hotels } from '../controllers/hotelcontroller.js';
 
 const hotelRouter = express.Router();
 

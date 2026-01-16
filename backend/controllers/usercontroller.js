@@ -1,8 +1,8 @@
-import bcrypt from 'bcrypt';
+﻿import bcrypt from 'bcrypt';
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 
-export function createUser(req,res){
+export function createUser(req, res) {
     const hashedPassword = bcrypt.hashSync(req.body.password, 10);
 
     const user = new User({
@@ -11,15 +11,12 @@ export function createUser(req,res){
         phone: req.body.phone,
         role: req.body.role,
         password: hashedPassword,
-        
-
-    })
+    });
 
     user.save()
-        .then((data) => {
+        .then(() => {
             res.status(201).json({
                 message: "User created successfully",
-             
             });
         })
         .catch((err) => {
@@ -30,42 +27,42 @@ export function createUser(req,res){
         });
 }
 
-export function loginUser(req, res){
+export function loginUser(req, res) {
 
     const { email, password } = req.body;
 
     User.findOne({ email: email })
-        .then((user)=>{
+        .then((user) => {
 
-            if(user == null){
+            if (user == null) {
                 return res.status(404).json({
                     message: "User not found"
                 });
             }
 
-            if(user.isblocked){
+            if (user.isblocked) {
                 return res.status(403).json({
                     message: "User is blocked"
                 });
             }
-            else{
+            else {
 
-                const isPasswordCorrect = bcrypt.compareSync(password,user.password);
-                if(isPasswordCorrect){
+                const isPasswordCorrect = bcrypt.compareSync(password, user.password);
+                if (isPasswordCorrect) {
                     const token = jwt.sign({
                         fullname: user.fullname,
                         email: user.email,
                         phone: user.phone,
                         role: user.role
                     },
-                    "secretkey"
-                )
+                        "secretkey"
+                    );
                     res.status(200).json({
                         message: "Login successful",
                         token: token,
                         role: user.role
                     });
-                }else{
+                } else {
                     res.status(401).json({
                         message: "Invalid password"
 
@@ -75,8 +72,8 @@ export function loginUser(req, res){
             }
 
         })
-         .catch((err) => {
-            console.error("Login error:", err); // log the full error on server
+        .catch((err) => {
+            console.error("Login error:", err);
             res.status(500).json({
                 message: "An error occurred during login",
                 error: err.message
@@ -85,15 +82,11 @@ export function loginUser(req, res){
 
 }
 
-
-
-
 export async function updateUser(req, res) {
     try {
         const email = req.params?.email;
         const { fullname, phone, role, password, isblocked } = req.body;
 
-        // If nothing to update, return error
         if (
             fullname === undefined &&
             phone === undefined &&
@@ -142,104 +135,102 @@ export async function updateUser(req, res) {
     }
 }
 
-
-
-
-export async function deleteuser(req, res) {
-try{
-    await User.deleteOne({email:req.params.email});
-    res.status(200).json({
-        success: true,
-        message: "User deleted successfully",
-    });
+export async function deleteUser(req, res) {
+    try {
+        await User.deleteOne({ email: req.params.email });
+        res.status(200).json({
+            success: true,
+            message: "User deleted successfully",
+        });
     }
-catch(error){
-    res.status(500).json({
-        success: false,
-        message: "User deleting tourist",
-    })
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error deleting user",
+        });
     }
-    
 }
-export function isAdmin(req,res){
-        if(req.user == null){
-            return false;
-        }
-        if(req.user.role == "Admin"){
-            return true;
-        }
-    }
-export function isTourist(req,res){
-        if(req.user == null){
-            return false;
-        }
-        if(req.user.role == "Tourist"){
-            return true;
-        }
-    }
-export function isHotel_owner(req,res){
-        if(req.user == null){
-            return false;
-        }
-        if(req.user.role == "HotelOwner"){
-            return true;
-        }
-    }
-export function isGuide(req,res){
-        if(req.user == null){
-            return false;
-        }
-        if(req.user.role == "Guide"){
-            return true;
-        }
-    }
 
-export function isVehicleCompany(req,res){
-        if(req.user == null){
-            return false;
-        }
-        if(req.user.role == "Vehicle"){
-            return true;
-        }
+export function isAdmin(req, res) {
+    if (req.user == null) {
+        return false;
     }
-
-export function isBlocked(req,res){
-        if(req.user == null){
-            return false;
-        }
-        if(req.user.status == "Blocked"){
-            return true;
-        }
+    if (req.user.role == "Admin") {
+        return true;
     }
+}
 
-
-    export async function view_all_users(req,res){
-        
-        try{
-            const viewUsers = await User.find().select('-password');
-            res.status(200).json(viewUsers);
-        }catch(err){
-            res.status(500).json({
-                message: "Failed to get Users",
-                error: err.message,
-            })
-        }
+export function isTourist(req, res) {
+    if (req.user == null) {
+        return false;
     }
+    if (req.user.role == "Tourist") {
+        return true;
+    }
+}
 
-export async function viewDetails(req,res){
+export function isHotel_owner(req, res) {
+    if (req.user == null) {
+        return false;
+    }
+    if (req.user.role == "HotelOwner") {
+        return true;
+    }
+}
 
-  const email = req.params.email;
+export function isGuide(req, res) {
+    if (req.user == null) {
+        return false;
+    }
+    if (req.user.role == "Guide") {
+        return true;
+    }
+}
 
-  try{
-    const user = await User.findOne({email:email});
-    res.json(user);
-    
-  }catch(error){
-    res.status(500).json({
-      success: false,
-      message: "Error fetching user details",
-      error: error.message
-    })
-  }
-   
+export function isVehicleCompany(req, res) {
+    if (req.user == null) {
+        return false;
+    }
+    if (req.user.role == "Vehicle") {
+        return true;
+    }
+}
+
+export function isBlocked(req, res) {
+    if (req.user == null) {
+        return false;
+    }
+    if (req.user.isblocked === true) {
+        return true;
+    }
+}
+
+export async function view_all_users(req, res) {
+
+    try {
+        const viewUsers = await User.find().select('-password');
+        res.status(200).json(viewUsers);
+    } catch (err) {
+        res.status(500).json({
+            message: "Failed to get Users",
+            error: err.message,
+        });
+    }
+}
+
+export async function viewDetails(req, res) {
+
+    const email = req.params.email;
+
+    try {
+        const user = await User.findOne({ email: email }).select('-password');
+        res.json(user);
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching user details",
+            error: error.message
+        });
+    }
 }
