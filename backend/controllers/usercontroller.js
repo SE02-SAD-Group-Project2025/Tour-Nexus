@@ -71,7 +71,7 @@ export function loginUser(req, res) {
                     });
                 } else {
                     res.status(401).json({
-                        message: "Invalid password"
+                        message: "UnAuthorized"
 
                     });
                 }
