@@ -116,11 +116,37 @@ export async function getVehicleById(req, res) {
 
         const vehicle = await Vehicle.findOne({ vehicle_id: vehicle_id });
 
-        res.json(vehicle);
+        if (!vehicle) {
+            return res.status(404).json({
+                success: false,
+                message: "Vehicle not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: vehicle,
+        });
     } catch (error) {
         res.status(500).json({
             error,
         })
+    }
+}
+
+export async function getAllVehicles(req, res) {
+    try {
+        const vehicles = await Vehicle.find();
+        res.status(200).json({
+            success: true,
+            data: vehicles,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching vehicles",
+            error: error.message,
+        });
     }
 }
 export async function getVehicleByStatus(req, res) {

@@ -2,6 +2,8 @@
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 
+const jwtSecret = process.env.JWT_SECRET || "secretkey";
+
 export function createUser(req, res) {
     const hashedPassword = bcrypt.hashSync(req.body.password, 10);
 
@@ -60,7 +62,7 @@ export function loginUser(req, res) {
                         phone: user.phone,
                         role: user.role
                     },
-                        "secretkey"
+                        jwtSecret
                     );
                     res.status(200).json({
                         message: "Login successful",

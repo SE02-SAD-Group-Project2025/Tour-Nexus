@@ -366,8 +366,14 @@ export default function VehicleSection() {
         const response = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/vehicle/view_all_vehicles`
         );
-        setVehicles(response.data);
-        setFilteredVehicles(response.data);
+        if (response.data.success) {
+          setVehicles(response.data.data);
+          setFilteredVehicles(response.data.data);
+        } else {
+          toast.error(response.data.message || "Failed to load vehicles");
+          setVehicles([]);
+          setFilteredVehicles([]);
+        }
       } catch (error) {
         console.error("Error fetching vehicles:", error);
       } finally {

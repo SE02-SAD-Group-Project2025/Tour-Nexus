@@ -4,7 +4,6 @@ import HotelCart from "./td_hotel_cart";
 import GuideCart from "./td_guide_cart";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import View_vehicles from "./tourist_view_vehicle";
 import VehicleSection from "./tourist_view_vehicle";
 
 // Import the new search banner components
@@ -221,7 +220,11 @@ export default function TouristDashboard() {
         setHotels(hotelsResponse.data);
         setGuides(guidesResponse.data);
         setguiderbooking(guiderbookingResponse.data);
-        setVehiclebooking(vehiclesResponse.data);
+        if (vehiclesResponse.data.success) {
+          setVehiclebooking(vehiclesResponse.data.data);
+        } else {
+          setVehiclebooking([]);
+        }
 
         console.log(guiderbookingResponse.data);
         console.log(vehiclesResponse.data);

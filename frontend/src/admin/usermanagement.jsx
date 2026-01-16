@@ -27,7 +27,7 @@ const UserManagement = ({ onBack }) => {
     try {
       // Change the port to match your backend server port
       const response = await fetch(
-        "http://localhost:3000/api/user/view-all-users",
+        `${import.meta.env.VITE_BACKEND_URL}/api/user/view-all-users`,
         {
           method: "GET",
           headers: {
@@ -54,7 +54,7 @@ const UserManagement = ({ onBack }) => {
     try {
       // Change the port to match your backend server port
       const response = await fetch(
-        `http://localhost:3000/api/user/update/${email}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/user/update/${email}`,
         {
           method: "PUT",
           headers: {
@@ -129,8 +129,10 @@ const UserManagement = ({ onBack }) => {
       case "Guide":
         return "bg-gradient-to-r from-green-500 to-emerald-500 text-white";
       case "Hotel Owner":
+      case "HotelOwner":
         return "bg-gradient-to-r from-purple-500 to-pink-500 text-white";
       case "Vehicle":
+      case "Vehicle Rental":
         return "bg-gradient-to-r from-orange-500 to-red-500 text-white";
       default:
         return "bg-gradient-to-r from-gray-500 to-slate-500 text-white";
@@ -403,14 +405,11 @@ const UserManagement = ({ onBack }) => {
                   <option value="Guide" className="bg-gray-800 text-white">
                     Guide
                   </option>
-                  <option
-                    value="Hotel Owner"
-                    className="bg-gray-800 text-white"
-                  >
+                  <option value="HotelOwner" className="bg-gray-800 text-white">
                     Hotel Owner
                   </option>
                   <option
-                    value="Vehicle Rental"
+                    value="Vehicle"
                     className="bg-gray-800 text-white"
                   >
                     Vehicle Rental

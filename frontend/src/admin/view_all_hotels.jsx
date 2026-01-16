@@ -21,7 +21,7 @@ export default function ViewAllHotels() {
       setError(null);
 
       const response = await fetch(
-        "http://localhost:3000/api/hotel/view_all_hotels",
+        `${import.meta.env.VITE_BACKEND_URL}/api/hotel/view_all_hotels`,
         {
           method: "GET",
           headers: {
