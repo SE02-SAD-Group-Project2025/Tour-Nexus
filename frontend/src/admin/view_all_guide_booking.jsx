@@ -622,13 +622,13 @@ export default function ViewAllGuideBookings() {
                     </div>
 
                     {/* Special Requests */}
-                    {booking.special_request && (
+                    {(booking.special_requests || booking.special_request) && (
                       <div>
                         <p className="text-white/60 text-xs uppercase tracking-wider mb-2">
                           Special Requests
                         </p>
                         <p className="text-white/90 text-sm bg-white/5 p-2 rounded-lg">
-                          {booking.special_request}
+                          {booking.special_requests || booking.special_request}
                         </p>
                       </div>
                     )}

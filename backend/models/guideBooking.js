@@ -48,9 +48,13 @@ const guideBookingSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    special_requests: {
+        type: String,
+        trim: true,
+    },
     special_request: {
-      type: String,
-      trim: true, 
+        type: String,
+        trim: true,
     },
     booking_status: {
         type: String,
