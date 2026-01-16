@@ -42,7 +42,7 @@ export default function ViewAllGuideBookings() {
       }
 
       const response = await fetch(
-        `http://localhost:3000/api/guidebookings/all?${queryParams}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/guidebookings/all?${queryParams}`,
         {
           method: "GET",
           headers: {

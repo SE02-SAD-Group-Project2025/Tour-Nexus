@@ -21,7 +21,7 @@ export default function ViewAllGuides() {
       setError(null);
 
       const response = await fetch(
-        "http://localhost:3000/api/guide/view_all_guides",
+        `${import.meta.env.VITE_BACKEND_URL}/api/guide/view_all_guides`,
         {
           method: "GET",
           headers: {

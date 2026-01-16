@@ -37,7 +37,7 @@ export default function ViewAllHotelBookings() {
       }
 
       const response = await fetch(
-        `http://localhost:3000/api/hotelbooking/?${queryParams}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/hotelbooking/?${queryParams}`,
         {
           method: "GET",
           headers: {
@@ -130,10 +130,17 @@ export default function ViewAllHotelBookings() {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  // Get unique hotels for filter dropdown
-  const uniqueHotels = [
-    ...new Set(bookings.map((booking) => booking.hotel_name)),
-  ];
+  // Get unique hotels for filter dropdown (use hotel_id for API filter)
+  const uniqueHotels = Array.from(
+    new Map(
+      bookings
+        .filter((booking) => booking.hotel_id)
+        .map((booking) => [booking.hotel_id, booking.hotel_name])
+    )
+  ).map(([hotel_id, hotel_name]) => ({
+    hotel_id,
+    hotel_name,
+  }));
 
   // Get stats for display
   const stats = {
@@ -399,9 +406,13 @@ export default function ViewAllHotelBookings() {
                   <option value="all" className="bg-gray-800">
                     All Hotels
                   </option>
-                  {uniqueHotels.map((hotel, index) => (
-                    <option key={index} value={hotel} className="bg-gray-800">
-                      {hotel}
+                  {uniqueHotels.map((hotel) => (
+                    <option
+                      key={hotel.hotel_id}
+                      value={hotel.hotel_id}
+                      className="bg-gray-800"
+                    >
+                      {hotel.hotel_name || hotel.hotel_id}
                     </option>
                   ))}
                 </select>

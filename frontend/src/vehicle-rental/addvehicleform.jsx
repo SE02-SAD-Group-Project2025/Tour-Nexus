@@ -689,7 +689,7 @@ const AddVehicleForm = () => {
           {/* Navigation buttons */}
           <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
             <button
-              onClick={() => navigate('/vehicleowner/dashboard')}
+              onClick={() => navigate('/vehiclerental/dashboard')}
               className="px-6 py-3 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg font-medium transition-all"
               disabled={isSubmitting}
             >

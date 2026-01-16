@@ -29,11 +29,16 @@ export default function TouristPersonalDetails() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
-    function deleteTourist(email){
+    function deleteTourist(){
         const token = localStorage.getItem("token");
 
         if (!token) {
             toast.error("Please login to delete account");
+            return;
+        }
+
+        if (!email) {
+            toast.error("Please enter your email");
             return;
         }
         axios.delete(import.meta.env.VITE_BACKEND_URL + '/api/user/' + email, {
