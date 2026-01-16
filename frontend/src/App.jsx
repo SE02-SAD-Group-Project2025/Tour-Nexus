@@ -5,7 +5,7 @@ import LoginDesign from "./login";
 import RegisterTouristDesign from "./tourist/register";
 import AddHotelForm from "./hotel-owner/addhotelform";
 import AdminDashboard from "./admin/admindashboard";
-import GuideDashboardContainer from "./guide/guidedashboard";
+import GuideDashboardContainer from "./guide/guide_dashboard";
 import TouristDashboard from "./tourist/tourist_dashboard";
 import GuideRegistrationForm from "./guide/guide_register";
 import HotelOwnerDashboard from "./hotel-owner/hotel_ownerdashboard";

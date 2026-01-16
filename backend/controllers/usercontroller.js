@@ -28,6 +28,11 @@ export function createUser(req, res) {
 }
 
 export function loginUser(req, res) {
+    if (User.db.readyState !== 1) {
+        return res.status(503).json({
+            message: "Database not connected. Please try again in a moment."
+        });
+    }
 
     const { email, password } = req.body;
 

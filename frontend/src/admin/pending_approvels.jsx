@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import PendingApprovelCart from "./pending_approvels_hotel_cart";
+import PendingApprovelCart from "./pending_approvel_hotel_cart";
 import PendingGuideCart from "./pending_approvel_guide_cart";
 
 export default function PendingApprovalsPage() {
