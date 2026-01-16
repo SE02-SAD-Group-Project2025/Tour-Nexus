@@ -2924,8 +2924,8 @@ function HotelOwnerDashboard() {
 
         .hotels-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 20px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
         }
 
         .no-hotels {
@@ -2937,6 +2937,50 @@ function HotelOwnerDashboard() {
           grid-column: 1 / -1;
         }
 
+        .hotel-card {
+          border-radius: 14px;
+        }
+
+        .hotel-image {
+          height: 150px;
+        }
+
+        .hotel-info {
+          padding: 16px;
+        }
+
+        .hotel-header h3 {
+          font-size: 16px;
+        }
+
+        .hotel-details .detail-item {
+          font-size: 13px;
+        }
+
+        .status-badge {
+          padding: 4px 8px;
+          font-size: 10px;
+        }
+
+        .hotel-description {
+          font-size: 13px;
+          margin-bottom: 12px;
+        }
+
+        .room-types h4 {
+          font-size: 12px;
+        }
+
+        .room-type-tag {
+          padding: 3px 8px;
+          font-size: 10px;
+        }
+
+        .hotel-actions .action-btn {
+          padding: 8px 12px;
+          font-size: 12px;
+        }
+
         @media (max-width: 900px) {
           .main-content {
             padding: 24px;
@@ -2944,6 +2988,18 @@ function HotelOwnerDashboard() {
 
           .sidebar {
             width: 220px;
+          }
+        }
+
+        @media (max-width: 1200px) {
+          .hotels-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 768px) {
+          .hotels-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
