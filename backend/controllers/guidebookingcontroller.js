@@ -1,6 +1,16 @@
 import Guide from "../models/guide.js";
-import guideBooking from "../models/guideBooking.js";
+import GuideBooking from "../models/guideBooking.js";
 import User from "../models/user.js";
+
+const TOURIST_ROLES = ["Tourist", "tourist"];
+
+const normalizeBooking = (booking) => {
+    const bookingObject = booking.toObject();
+    if (!bookingObject.special_requests && bookingObject.special_request) {
+        bookingObject.special_requests = bookingObject.special_request;
+    }
+    return bookingObject;
+};
 
 export async function createGuideBooking(req, res) {
     try {
@@ -122,7 +132,7 @@ export async function createGuideBooking(req, res) {
         // Validate tourist exists and is not blocked
         const tourist = await User.findOne({ 
             email: email, 
-            role: 'Tourist',
+            role: { $in: TOURIST_ROLES },
             isblocked: false 
         });
         if (!tourist) {
@@ -136,12 +146,8 @@ export async function createGuideBooking(req, res) {
         const conflictingBooking = await GuideBooking.findOne({
             guide_id: guide_id,
             booking_status: { $in: ['requested', 'confirmed'] },
-            $or: [
-                {
-                    check_in_date: { $lte: check_out_date },
-                    check_out_date: { $gte: check_in_date }
-                }
-            ]
+            check_in_date: { $lte: checkOutDate },
+            check_out_date: { $gte: checkInDate }
         });
 
         if (conflictingBooking) {
@@ -229,11 +235,11 @@ export async function createGuideBooking(req, res) {
         //     });
         // }
 
-        // return res.status(500).json({
-        //     success: false,
-        //     message: "Internal server error",
-        //     error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
-        // });
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        });
     }
 }
 
@@ -249,8 +255,8 @@ export async function getTouristBookings(req, res) {
             });
         }
 
-        const bookings = await GuideBooking.find({ tourist_email: email })
-            .sort({ created_at: -1 });
+        const bookings = await GuideBooking.find({ email })
+            .sort({ date: -1 });
 
         // Manually populate guide information
         const bookingsWithGuideInfo = await Promise.all(
@@ -258,8 +264,9 @@ export async function getTouristBookings(req, res) {
                 const guide = await Guide.findOne({ guide_id: booking.guide_id })
                     .select('full_name profile_image daily_rate contact_number area_cover');
                 
+                const bookingObject = normalizeBooking(booking);
                 return {
-                    ...booking.toObject(),
+                    ...bookingObject,
                     guide_info: guide
                 };
             })
@@ -295,18 +302,19 @@ export async function getGuideBookings(req, res) {
         }
 
         const bookings = await GuideBooking.find({ guide_id })
-            .sort({ created_at: -1 });
+            .sort({ date: -1 });
 
         // Manually populate tourist information
         const bookingsWithTouristInfo = await Promise.all(
             bookings.map(async (booking) => {
                 const tourist = await User.findOne({ 
-                    email: booking.tourist_email,
-                    role: 'tourist'
+                    email: booking.email,
+                    role: { $in: TOURIST_ROLES }
                 }).select('fullname phone');
                 
+                const bookingObject = normalizeBooking(booking);
                 return {
-                    ...booking.toObject(),
+                    ...bookingObject,
                     tourist_info: tourist
                 };
             })
@@ -417,12 +425,12 @@ export async function getBookingById(req, res) {
             .select('full_name profile_image contact_number daily_rate area_cover');
         
         const tourist = await User.findOne({ 
-            email: booking.tourist_email,
-            role: 'tourist'
+            email: booking.email,
+            role: { $in: TOURIST_ROLES }
         }).select('fullname phone');
 
         const bookingWithInfo = {
-            ...booking.toObject(),
+            ...normalizeBooking(booking),
             guide_info: guide,
             tourist_info: tourist
         };
@@ -516,7 +524,7 @@ export async function getAllBookings(req, res) {
 
         // Get bookings with pagination
         const bookings = await GuideBooking.find(filterCriteria)
-            .sort({ created_at: -1 })
+            .sort({ date: -1 })
             .skip(skip)
             .limit(limitNum);
 
@@ -530,12 +538,13 @@ export async function getAllBookings(req, res) {
                     .select('full_name profile_image contact_number');
                 
                 const tourist = await User.findOne({ 
-                    email: booking.tourist_email,
-                    role: 'tourist'
+                    email: booking.email,
+                    role: { $in: TOURIST_ROLES }
                 }).select('fullname phone');
                 
+                const bookingObject = normalizeBooking(booking);
                 return {
-                    ...booking.toObject(),
+                    ...bookingObject,
                     guide_info: guide,
                     tourist_info: tourist
                 };
@@ -662,9 +671,10 @@ export async function getUpcomingBookings(req, res) {
         };
 
         // Filter based on user role
-        if (role === 'Tourist') {
-            filterCriteria.tourist_email = email;
-        } else if (role === 'Guide') {
+        const normalizedRole = role.toLowerCase();
+        if (normalizedRole === 'tourist') {
+            filterCriteria.email = email;
+        } else if (normalizedRole === 'guide') {
             // Find guide by email first
             const guide = await Guide.findOne({ email: email });
             if (!guide) {
@@ -677,7 +687,7 @@ export async function getUpcomingBookings(req, res) {
         } else {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid role. Must be "tourist" or "guide"'
+                message: 'Invalid role. Must be "Tourist" or "Guide"'
             });
         }
 
@@ -692,12 +702,13 @@ export async function getUpcomingBookings(req, res) {
                     .select('full_name profile_image contact_number');
                 
                 const tourist = await User.findOne({ 
-                    email: booking.tourist_email,
-                    role: 'tourist'
+                    email: booking.email,
+                    role: { $in: TOURIST_ROLES }
                 }).select('fullname phone');
                 
+                const bookingObject = normalizeBooking(booking);
                 return {
-                    ...booking.toObject(),
+                    ...bookingObject,
                     guide_info: guide,
                     tourist_info: tourist
                 };

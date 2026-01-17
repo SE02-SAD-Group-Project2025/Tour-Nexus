@@ -300,18 +300,22 @@ function GuideDashboard() {
   };
 
   const sidebarItems = [
-    { name: "Dashboard", icon: Activity, emoji: "📊" },
-    { name: "My Tours", icon: Navigation, emoji: "🗺️" },
-    { name: "Profile", icon: Users, emoji: "👥" },
-    // { name: "Reviews", icon: Star, emoji: "⭐" },
-    // { name: "Earnings", icon: DollarSign, emoji: "💰" },
-    // { name: "Messages", icon: MessageCircle, emoji: "💬" },
-    // { name: "Settings", icon: Settings, emoji: "⚙️" },
-    { name: "Logout", icon: LogOut, emoji: "🚪" },
+    { name: "Dashboard", icon: Activity },
+    { name: "My Tours", icon: Navigation },
+    { name: "Profile", icon: Users },
+    // { name: "Reviews", icon: Star },
+    // { name: "Earnings", icon: DollarSign },
+    // { name: "Messages", icon: MessageCircle },
+    // { name: "Settings", icon: Settings },
+    { name: "Logout", icon: LogOut },
   ];
 
   // Logout function
   const handleLogout = () => {
+    if (!window.confirm("Are you sure you want to logout?")) {
+      return;
+    }
+
     localStorage.removeItem("token");
     localStorage.removeItem("email");
     toast.success("Logged out successfully");
@@ -562,7 +566,7 @@ function GuideDashboard() {
   // Error State Component
   const ErrorState = () => (
     <div className="error-state">
-      <div style={{ fontSize: "48px", marginBottom: "20px" }}>⚠️</div>
+      <AlertCircle className="error-icon" />
       <h3>Unable to Load Data</h3>
       <p>{error}</p>
       <div
@@ -650,10 +654,10 @@ function GuideDashboard() {
         )}
         <div className="contact-info">
           <div className="detail-item">
-            <span>👥 {tour.group_size} people</span>
+            <span>Group: {tour.group_size} people</span>
           </div>
           <div className="detail-item">
-            <span>💰 {tour.amount}</span>
+            <span>Total: {tour.amount}</span>
           </div>
         </div>
         <div className="tour-actions">
@@ -1165,7 +1169,7 @@ function GuideDashboard() {
             <div className="stat-card">
               <div className="number">{stats.avgRating}</div>
               <div className="label">Average Rating</div>
-              <div className="change">⭐ Star rating</div>
+              <div className="change">Average rating</div>
             </div>
 
             <div className="stat-card">
@@ -1184,7 +1188,7 @@ function GuideDashboard() {
                 className="action-card"
                 onClick={() => handleMenuItemClick("My Tours")}
               >
-                <h3>🗺️ Manage Tours ({stats.totalTours})</h3>
+                <h3>Manage Tours ({stats.totalTours})</h3>
                 <p>View and manage your tours</p>
                 {stats.pendingTours > 0 && (
                   <div
@@ -1203,7 +1207,7 @@ function GuideDashboard() {
                 className="action-card"
                 onClick={() => handleMenuItemClick("Profile")}
               >
-                <h3>👥 Guide Journey</h3>
+                <h3>Guide Journey</h3>
                 <p>Review new booking requests and update guide details</p>
               </div>
 
@@ -1211,7 +1215,7 @@ function GuideDashboard() {
                 className="action-card"
                 onClick={() => handleMenuItemClick("Reviews")}
               >
-                <h3>⭐ Reviews & Ratings</h3>
+                <h3>Reviews & Ratings</h3>
                 <p>View customer feedback</p>
               </div>
 
@@ -1219,7 +1223,7 @@ function GuideDashboard() {
                 className="action-card"
                 onClick={() => handleMenuItemClick("Earnings")}
               >
-                <h3>💰 Earnings</h3>
+                <h3>Earnings</h3>
                 <p>Track your income</p>
               </div>
 
@@ -1227,7 +1231,7 @@ function GuideDashboard() {
                 className="action-card"
                 onClick={() => handleMenuItemClick("Messages")}
               >
-                <h3>💬 Messages</h3>
+                <h3>Messages</h3>
                 <p>Chat with tourists</p>
               </div>
 
@@ -1235,7 +1239,7 @@ function GuideDashboard() {
                 className="action-card"
                 onClick={() => handleMenuItemClick("Settings")}
               >
-                <h3>⚙️ Settings</h3>
+                <h3>Settings</h3>
                 <p>Account preferences</p>
               </div>
             </div>
@@ -1337,6 +1341,7 @@ function GuideDashboard() {
       <main className="main-content">{renderContent()}</main>
 
       <style jsx>{`
+        @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap");
         * {
           margin: 0;
           padding: 0;
@@ -1917,6 +1922,294 @@ function GuideDashboard() {
           font-size: 14px;
           color: #666;
           margin-bottom: 20px;
+        }
+
+        :root {
+          --bg: #f4efe6;
+          --bg-2: #e6f1ea;
+          --panel: rgba(255, 255, 255, 0.92);
+          --panel-border: rgba(15, 23, 42, 0.08);
+          --ink: #1f2937;
+          --muted: #5b6472;
+          --brand: #0f766e;
+          --accent: #d97706;
+          --danger: #b42318;
+          --shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+          --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.08);
+          --ring: 0 0 0 4px rgba(15, 118, 110, 0.15);
+        }
+
+        body {
+          font-family: "Manrope", "Segoe UI", Tahoma, sans-serif;
+          background: linear-gradient(135deg, var(--bg), var(--bg-2));
+          color: var(--ink);
+        }
+
+        .main-container {
+          background: transparent;
+          position: relative;
+        }
+
+        .main-container::before,
+        .main-container::after {
+          content: "";
+          position: fixed;
+          width: 360px;
+          height: 360px;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .main-container::before {
+          top: -140px;
+          right: -140px;
+          background: radial-gradient(
+            circle at 30% 30%,
+            rgba(15, 118, 110, 0.18),
+            transparent 60%
+          );
+        }
+
+        .main-container::after {
+          bottom: -160px;
+          left: -140px;
+          background: radial-gradient(
+            circle at 70% 30%,
+            rgba(217, 119, 6, 0.18),
+            transparent 60%
+          );
+        }
+
+        .header {
+          background: var(--panel);
+          border-bottom: 1px solid var(--panel-border);
+          box-shadow: var(--shadow-soft);
+          backdrop-filter: blur(14px);
+        }
+
+        .logo {
+          color: var(--brand);
+          letter-spacing: -0.01em;
+        }
+
+        .search-bar input {
+          background: #fff;
+          border: 1px solid var(--panel-border);
+          border-radius: 999px;
+          padding: 12px 16px;
+          color: var(--ink);
+        }
+
+        .user-profile {
+          border-radius: 999px;
+          padding: 8px 14px;
+          border: 1px solid var(--panel-border);
+          box-shadow: var(--shadow-soft);
+          background: #fff;
+        }
+
+        .dropdown-menu {
+          border-radius: 12px;
+          border: 1px solid var(--panel-border);
+          box-shadow: var(--shadow);
+          overflow: hidden;
+        }
+
+        .dropdown-item:hover {
+          background: rgba(15, 118, 110, 0.08);
+        }
+
+        .sidebar {
+          background: var(--panel);
+          border-right: 1px solid var(--panel-border);
+          box-shadow: var(--shadow-soft);
+        }
+
+        .sidebar-item {
+          margin: 6px 10px;
+          border-radius: 12px;
+          border: 1px solid transparent;
+        }
+
+        .sidebar-item svg {
+          color: var(--muted);
+        }
+
+        .sidebar-item.active {
+          background: linear-gradient(135deg, var(--brand), #1e9e8b);
+          color: #fff;
+          border-color: transparent;
+        }
+
+        .sidebar-item.active svg {
+          color: #fff;
+        }
+
+        .main-content {
+          background: transparent;
+          padding: 32px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .welcome-section {
+          border-radius: 18px;
+          background: linear-gradient(135deg, var(--brand), var(--accent));
+          box-shadow: var(--shadow);
+        }
+
+        .stats-grid {
+          gap: 22px;
+        }
+
+        .stat-card {
+          border-radius: 16px;
+          border: 1px solid var(--panel-border);
+          background: var(--panel);
+          box-shadow: var(--shadow-soft);
+          text-align: left;
+        }
+
+        .stat-card .number {
+          font-size: 32px;
+          color: var(--brand);
+        }
+
+        .stat-card .change {
+          color: var(--muted);
+        }
+
+        .action-card {
+          border-radius: 16px;
+          background: var(--panel);
+          border: 1px solid var(--panel-border);
+          box-shadow: var(--shadow-soft);
+        }
+
+        .action-card:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--shadow);
+          border-color: rgba(15, 118, 110, 0.3);
+        }
+
+        .tour-card {
+          border-radius: 16px;
+          border: 1px solid var(--panel-border);
+          box-shadow: var(--shadow-soft);
+        }
+
+        .tour-image {
+          background: linear-gradient(
+            135deg,
+            rgba(15, 118, 110, 0.12),
+            rgba(217, 119, 6, 0.08)
+          );
+        }
+
+        .status-badge {
+          border-radius: 999px;
+          padding: 6px 10px;
+        }
+
+        .action-btn.primary {
+          background: linear-gradient(135deg, var(--brand), #1e9e8b);
+          color: #fff;
+        }
+
+        .action-btn.secondary {
+          background: #fff;
+          border: 1px solid var(--panel-border);
+          color: var(--muted);
+        }
+
+        .action-btn.danger {
+          background: #fee2e2;
+          color: var(--danger);
+          border: 1px solid #fecaca;
+        }
+
+        .loading-state,
+        .error-state,
+        .no-tours,
+        .placeholder-card,
+        .profile-card {
+          border-radius: 16px;
+          border: 1px solid var(--panel-border);
+          background: var(--panel);
+          box-shadow: var(--shadow-soft);
+        }
+
+        .spinner {
+          border-top-color: var(--brand);
+        }
+
+        .error-icon {
+          width: 46px;
+          height: 46px;
+          color: var(--danger);
+          margin-bottom: 16px;
+        }
+
+        .profile-item input,
+        .profile-item select,
+        .profile-item textarea {
+          border-radius: 12px;
+          border: 1px solid var(--panel-border);
+          padding: 12px;
+        }
+
+        .profile-item input:focus,
+        .profile-item select:focus,
+        .profile-item textarea:focus {
+          outline: none;
+          box-shadow: var(--ring);
+          border-color: rgba(15, 118, 110, 0.4);
+        }
+
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .stat-card,
+        .action-card,
+        .tour-card {
+          animation: fadeUp 0.6s ease both;
+        }
+
+        .stat-card:nth-child(2),
+        .action-card:nth-child(2),
+        .tour-card:nth-child(2) {
+          animation-delay: 0.05s;
+        }
+
+        .stat-card:nth-child(3),
+        .action-card:nth-child(3),
+        .tour-card:nth-child(3) {
+          animation-delay: 0.1s;
+        }
+
+        @media (max-width: 900px) {
+          .main-content {
+            padding: 24px;
+          }
+
+          .sidebar {
+            width: 220px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .main-content {
+            padding: 20px;
+          }
         }
       `}</style>
     </div>

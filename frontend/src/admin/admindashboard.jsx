@@ -8,12 +8,37 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    if (!window.confirm("Are you sure you want to logout?")) {
+      return;
+    }
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
     navigate("/login");
   };
 
   return (
     <div>
       <style jsx>{`
+        @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap");
+
+        :root {
+          --bg: #f4efe6;
+          --bg-2: #e6f1ea;
+          --panel: rgba(255, 255, 255, 0.92);
+          --panel-solid: #ffffff;
+          --panel-border: rgba(15, 23, 42, 0.08);
+          --ink: #1f2937;
+          --muted: #5b6472;
+          --brand: #0f766e;
+          --brand-2: #14532d;
+          --accent: #d97706;
+          --danger: #b42318;
+          --shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+          --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.08);
+          --ring: 0 0 0 4px rgba(15, 118, 110, 0.15);
+        }
+
         * {
           margin: 0;
           padding: 0;
@@ -21,23 +46,57 @@ export default function AdminDashboard() {
         }
 
         body {
-          font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: #333;
+          font-family: "Manrope", "Segoe UI", Tahoma, sans-serif;
+          background: var(--bg);
+          color: var(--ink);
           min-height: 100vh;
         }
 
         .dashboard-container {
           min-height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, var(--bg), var(--bg-2));
+          position: relative;
+          overflow: hidden;
+        }
+
+        .dashboard-container::before {
+          content: "";
+          position: absolute;
+          width: 380px;
+          height: 380px;
+          border-radius: 50%;
+          background: radial-gradient(
+            circle at 30% 30%,
+            rgba(15, 118, 110, 0.2),
+            transparent 65%
+          );
+          top: -120px;
+          right: -120px;
+          animation: float 14s ease-in-out infinite;
+        }
+
+        .dashboard-container::after {
+          content: "";
+          position: absolute;
+          width: 420px;
+          height: 420px;
+          border-radius: 32%;
+          background: radial-gradient(
+            circle at 70% 30%,
+            rgba(217, 119, 6, 0.18),
+            transparent 60%
+          );
+          bottom: -160px;
+          left: -120px;
+          animation: float 18s ease-in-out infinite reverse;
         }
 
         .header {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          padding: 25px 30px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+          background: var(--panel);
+          backdrop-filter: blur(14px);
+          padding: 26px 32px;
+          border-bottom: 1px solid var(--panel-border);
+          box-shadow: var(--shadow-soft);
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -47,91 +106,124 @@ export default function AdminDashboard() {
         }
 
         .header-left h1 {
-          font-size: 32px;
-          margin-bottom: 5px;
-          background: linear-gradient(45deg, #667eea, #764ba2);
+          font-size: clamp(26px, 3vw, 34px);
+          margin-bottom: 6px;
+          background: linear-gradient(90deg, var(--brand), var(--accent));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          font-weight: 700;
+          font-weight: 800;
+          letter-spacing: -0.02em;
         }
 
         .header-left p {
-          color: #666;
+          color: var(--muted);
           font-size: 16px;
         }
 
         .header-right {
           display: flex;
           align-items: center;
-          gap: 15px;
+          gap: 16px;
         }
 
         .controls {
           display: flex;
           align-items: center;
-          gap: 15px;
+          gap: 12px;
         }
 
         .controls select,
         .controls button {
-          padding: 12px 20px;
-          border: 2px solid transparent;
-          background: linear-gradient(45deg, #667eea, #764ba2);
-          color: white;
+          font-family: inherit;
+          padding: 12px 18px;
+          border-radius: 10px;
+          border: 1px solid var(--panel-border);
+          background: var(--panel-solid);
+          color: var(--ink);
           cursor: pointer;
-          border-radius: 8px;
           font-weight: 600;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+          transition: transform 0.2s ease, box-shadow 0.2s ease,
+            border-color 0.2s ease;
+          box-shadow: var(--shadow-soft);
+        }
+
+        .controls select {
+          appearance: none;
+          padding-right: 34px;
+          background-image: linear-gradient(
+              45deg,
+              transparent 50%,
+              var(--muted) 50%
+            ),
+            linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+          background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+          background-size: 6px 6px, 6px 6px;
+          background-repeat: no-repeat;
+        }
+
+        .controls button {
+          background: linear-gradient(135deg, var(--brand), #1e9e8b);
+          color: #fff;
+          border: none;
+          box-shadow: 0 12px 25px rgba(15, 118, 110, 0.25);
         }
 
         .controls select:hover,
         .controls button:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+          border-color: rgba(15, 118, 110, 0.35);
+          box-shadow: var(--shadow);
+        }
+
+        .controls select:focus,
+        .controls button:focus {
+          outline: none;
+          box-shadow: var(--ring);
         }
 
         .logout-btn {
-          padding: 12px 24px;
-          background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-          color: white;
+          padding: 12px 22px;
+          background: linear-gradient(135deg, #ef4444, var(--danger));
+          color: #fff;
           border: none;
-          border-radius: 8px;
-          font-weight: 600;
+          border-radius: 10px;
+          font-weight: 700;
           cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(238, 90, 36, 0.3);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          box-shadow: 0 14px 26px rgba(180, 35, 24, 0.25);
         }
 
         .logout-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(238, 90, 36, 0.4);
+          box-shadow: 0 18px 30px rgba(180, 35, 24, 0.3);
         }
 
         .dashboard-content {
-          padding: 40px 30px;
+          padding: 44px 30px 60px;
           max-width: 1400px;
           margin: 0 auto;
+          position: relative;
+          z-index: 1;
         }
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 25px;
-          margin-bottom: 50px;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 24px;
+          margin-bottom: 42px;
         }
 
         .stat-card {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          padding: 30px;
+          background: var(--panel);
+          padding: 28px;
           border-radius: 16px;
           text-align: center;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          transition: all 0.3s ease;
+          box-shadow: var(--shadow-soft);
+          border: 1px solid var(--panel-border);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
           position: relative;
           overflow: hidden;
+          animation: fadeUp 0.6s ease both;
         }
 
         .stat-card::before {
@@ -140,123 +232,126 @@ export default function AdminDashboard() {
           top: 0;
           left: 0;
           right: 0;
-          height: 4px;
-          background: linear-gradient(45deg, #667eea, #764ba2);
+          height: 3px;
+          background: linear-gradient(90deg, var(--brand), var(--accent));
         }
 
         .stat-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+          transform: translateY(-6px);
+          box-shadow: var(--shadow);
         }
 
         .stat-card h3 {
-          font-size: 14px;
+          font-size: 13px;
           text-transform: uppercase;
-          color: #666;
-          margin-bottom: 15px;
-          letter-spacing: 1.5px;
-          font-weight: 600;
+          color: var(--muted);
+          margin-bottom: 12px;
+          letter-spacing: 0.18em;
+          font-weight: 700;
         }
 
         .stat-card .number {
-          font-size: 42px;
-          font-weight: 700;
-          background: linear-gradient(45deg, #667eea, #764ba2);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          margin-bottom: 10px;
+          font-size: 40px;
+          font-weight: 800;
+          color: var(--brand);
+          margin-bottom: 8px;
         }
 
         .sections-container {
           display: grid;
-          gap: 30px;
+          gap: 28px;
         }
 
         .quick-actions,
         .management-section {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          padding: 35px;
-          border-radius: 16px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: var(--panel);
+          padding: 34px;
+          border-radius: 18px;
+          box-shadow: var(--shadow-soft);
+          border: 1px solid var(--panel-border);
+          position: relative;
+          overflow: hidden;
+          animation: fadeUp 0.7s ease both;
         }
 
         .section-header {
-          margin-bottom: 30px;
+          margin-bottom: 26px;
         }
 
         .section-header h2 {
           font-size: 24px;
           margin-bottom: 8px;
-          color: #333;
+          color: var(--ink);
           font-weight: 700;
         }
 
         .section-header p {
-          color: #666;
-          font-size: 16px;
+          color: var(--muted);
+          font-size: 15px;
         }
 
         .actions-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
           gap: 20px;
         }
 
         .action-card {
-          padding: 25px;
-          border: 2px solid rgba(102, 126, 234, 0.1);
-          border-radius: 12px;
-          text-align: center;
+          padding: 24px;
+          border: 1px solid rgba(15, 118, 110, 0.15);
+          border-radius: 14px;
+          text-align: left;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: transform 0.25s ease, box-shadow 0.25s ease,
+            border-color 0.25s ease;
           background: linear-gradient(
             135deg,
-            rgba(102, 126, 234, 0.05),
-            rgba(118, 75, 162, 0.05)
+            rgba(15, 118, 110, 0.08),
+            rgba(217, 119, 6, 0.06)
           );
           position: relative;
           overflow: hidden;
+          animation: fadeUp 0.7s ease both;
         }
 
-        .action-card::before {
+        .action-card::after {
           content: "";
           position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(
-            45deg,
-            rgba(102, 126, 234, 0.1),
-            rgba(118, 75, 162, 0.1)
+          width: 120px;
+          height: 120px;
+          background: radial-gradient(
+            circle,
+            rgba(15, 118, 110, 0.2),
+            transparent 70%
           );
-          transition: left 0.3s ease;
-        }
-
-        .action-card:hover::before {
-          left: 0;
+          right: -40px;
+          top: -40px;
+          opacity: 0.5;
+          transition: opacity 0.25s ease;
         }
 
         .action-card:hover {
-          border-color: rgba(102, 126, 234, 0.3);
-          transform: translateY(-3px);
-          box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+          border-color: rgba(15, 118, 110, 0.45);
+          transform: translateY(-4px);
+          box-shadow: var(--shadow);
+        }
+
+        .action-card:hover::after {
+          opacity: 0.8;
         }
 
         .action-card h3 {
           margin-bottom: 10px;
           font-size: 18px;
-          font-weight: 600;
-          color: #333;
+          font-weight: 700;
+          color: var(--ink);
           position: relative;
           z-index: 1;
         }
 
         .action-card p {
           font-size: 14px;
-          color: #666;
+          color: var(--muted);
           position: relative;
           z-index: 1;
         }
@@ -264,97 +359,96 @@ export default function AdminDashboard() {
         .booking-card {
           background: linear-gradient(
             135deg,
-            rgba(40, 167, 69, 0.05),
-            rgba(32, 201, 151, 0.05)
+            rgba(15, 118, 110, 0.12),
+            rgba(20, 83, 45, 0.08)
           );
-          border-color: rgba(40, 167, 69, 0.2);
+          border-color: rgba(20, 83, 45, 0.2);
         }
 
         .booking-card:hover {
-          border-color: rgba(40, 167, 69, 0.4);
-          box-shadow: 0 10px 30px rgba(40, 167, 69, 0.2);
+          border-color: rgba(20, 83, 45, 0.4);
+          box-shadow: 0 16px 30px rgba(20, 83, 45, 0.18);
         }
 
         .hotel-card {
           background: linear-gradient(
             135deg,
-            rgba(255, 107, 107, 0.05),
-            rgba(238, 90, 36, 0.05)
+            rgba(217, 119, 6, 0.12),
+            rgba(234, 88, 12, 0.08)
           );
-          border-color: rgba(255, 107, 107, 0.2);
+          border-color: rgba(217, 119, 6, 0.25);
         }
 
         .hotel-card:hover {
-          border-color: rgba(255, 107, 107, 0.4);
-          box-shadow: 0 10px 30px rgba(255, 107, 107, 0.2);
+          border-color: rgba(217, 119, 6, 0.45);
+          box-shadow: 0 16px 30px rgba(217, 119, 6, 0.2);
         }
 
         .guide-card {
           background: linear-gradient(
             135deg,
-            rgba(52, 152, 219, 0.05),
-            rgba(155, 89, 182, 0.05)
+            rgba(2, 132, 199, 0.12),
+            rgba(15, 118, 110, 0.1)
           );
-          border-color: rgba(52, 152, 219, 0.2);
+          border-color: rgba(2, 132, 199, 0.25);
         }
 
         .guide-card:hover {
-          border-color: rgba(52, 152, 219, 0.4);
-          box-shadow: 0 10px 30px rgba(52, 152, 219, 0.2);
+          border-color: rgba(2, 132, 199, 0.45);
+          box-shadow: 0 16px 30px rgba(2, 132, 199, 0.18);
         }
 
-        .clear {
-          clear: both;
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
-        @media (max-width: 768px) {
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(12px);
+          }
+        }
+
+        @media (max-width: 920px) {
           .header {
             flex-direction: column;
             gap: 20px;
-            padding: 20px;
+            padding: 22px;
+            text-align: center;
           }
 
           .header-right {
             width: 100%;
-            justify-content: space-between;
+            justify-content: center;
+            flex-wrap: wrap;
           }
 
           .controls {
             flex-wrap: wrap;
-          }
-
-          .dashboard-content {
-            padding: 20px 15px;
-          }
-
-          .stats-grid {
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-          }
-
-          .actions-grid {
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            justify-content: center;
           }
         }
 
-        @media (max-width: 480px) {
-          .header-left h1 {
-            font-size: 24px;
+        @media (max-width: 600px) {
+          .dashboard-content {
+            padding: 26px 18px 50px;
           }
 
           .controls select,
           .controls button,
           .logout-btn {
-            padding: 10px 16px;
+            padding: 10px 14px;
             font-size: 14px;
-          }
-
-          .stats-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .actions-grid {
-            grid-template-columns: 1fr;
           }
         }
       `}</style>
