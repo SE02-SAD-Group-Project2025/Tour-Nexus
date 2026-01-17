@@ -5,6 +5,16 @@ import GuideCart from "./td_guide_cart";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import VehicleSection from "./tourist_view_vehicle";
+import {
+  MapPin,
+  Calendar,
+  Users,
+  Compass,
+  Sparkles,
+  ArrowRight,
+  Clock,
+  Loader2,
+} from "lucide-react";
 
 // Import the new search banner components
 const HotelSearchBanner = ({ onSearch }) => {
@@ -182,6 +192,70 @@ export default function TouristDashboard() {
     phone: "",
   });
 
+  // AI Trip Planner State
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [plannerData, setPlannerData] = useState({
+    duration: 3,
+    travel_style: [],
+    group_type: "couple",
+  });
+  const [plannerLoading, setPlannerLoading] = useState(false);
+  const [plannerResult, setPlannerResult] = useState(null);
+  const [plannerStep, setPlannerStep] = useState(0); // 0: Input, 1: Result
+
+  const travelStyles = [
+    { id: "nature", label: "Nature", emoji: "🌿" },
+    { id: "adventure", label: "Adventure", emoji: "⛰️" },
+    { id: "culture", label: "Culture", emoji: "🏛️" },
+    { id: "relaxation", label: "Relaxation", emoji: "🧘" },
+    { id: "food", label: "Food", emoji: "🍜" },
+    { id: "wildlife", label: "Wildlife", emoji: "🐘" },
+  ];
+
+  const groupTypes = [
+    { id: "solo", label: "Solo Traveler", icon: Users },
+    { id: "couple", label: "Couple", icon: Users },
+    { id: "family", label: "Family", icon: Users },
+    { id: "friends", label: "Friends", icon: Users },
+  ];
+
+  const handleStyleToggle = (style) => {
+    setPlannerData((prev) => {
+      const styles = prev.travel_style.includes(style)
+        ? prev.travel_style.filter((s) => s !== style)
+        : [...prev.travel_style, style];
+      return { ...prev, travel_style: styles };
+    });
+  };
+
+  const generateTrip = async () => {
+    if (plannerData.travel_style.length === 0) {
+      toast.error("Please select at least one travel style!");
+      return;
+    }
+
+    setPlannerLoading(true);
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/ai-trip/roadmap`,
+        plannerData,
+      );
+
+      if (response.data && response.data.ok) {
+        setPlannerResult(response.data.roadmap);
+        setPlannerStep(1);
+        toast.success("Trip generated successfully!");
+      } else {
+        toast.error("Failed to generate trip. Please try again.");
+      }
+    } catch (error) {
+      console.error("AI Trip Error:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setPlannerLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
       localStorage.removeItem("token");
@@ -199,22 +273,22 @@ export default function TouristDashboard() {
         setIsLoading(true);
 
         const hotelsResponse = await axios.get(
-          import.meta.env.VITE_BACKEND_URL + "/api/hotel/view_approved_hotels"
+          import.meta.env.VITE_BACKEND_URL + "/api/hotel/view_approved_hotels",
         );
         const guidesResponse = await axios.get(
-          import.meta.env.VITE_BACKEND_URL + "/api/guide/view_approved_guides"
+          import.meta.env.VITE_BACKEND_URL + "/api/guide/view_approved_guides",
         );
 
         const guiderbookingResponse = await axios.get(
           `${
             import.meta.env.VITE_BACKEND_URL
-          }/api/guidebookings/guide_booking/${email}`
+          }/api/guidebookings/guide_booking/${email}`,
         );
 
         const vehiclesResponse = await axios.get(
           `${
             import.meta.env.VITE_BACKEND_URL
-          }/api/vehiclebooking/tourist/${email}`
+          }/api/vehiclebooking/tourist/${email}`,
         );
 
         setHotels(hotelsResponse.data);
@@ -255,14 +329,14 @@ export default function TouristDashboard() {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
               },
-            }
+            },
           );
           if (response.data.success) {
             setBookings(response.data.data || []);
             setBookingsFetched(true);
           } else {
             throw new Error(
-              response.data.message || "Failed to fetch bookings"
+              response.data.message || "Failed to fetch bookings",
             );
           }
         } catch (err) {
@@ -304,7 +378,7 @@ export default function TouristDashboard() {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (response.data) {
@@ -346,7 +420,7 @@ export default function TouristDashboard() {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -386,7 +460,7 @@ export default function TouristDashboard() {
       });
 
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/hotel/search?${queryParams}`
+        `${import.meta.env.VITE_BACKEND_URL}/api/hotel/search?${queryParams}`,
       );
 
       if (response.data.success) {
@@ -478,7 +552,7 @@ export default function TouristDashboard() {
       const languageMatch =
         guide.languages &&
         guide.languages.some(
-          (lang) => lang.toLowerCase() === searchData.language.toLowerCase()
+          (lang) => lang.toLowerCase() === searchData.language.toLowerCase(),
         );
 
       const isAvailable = true; // This should be enhanced with actual availability check
@@ -512,7 +586,7 @@ export default function TouristDashboard() {
   };
 
   const aiTripPlanner = () => {
-    alert("Opening AI Trip Planner...");
+    setActiveMenuItem("Trip Planner");
   };
 
   const exploreMapAction = () => {
@@ -748,7 +822,7 @@ export default function TouristDashboard() {
                     {filteredGuides.map((guide) => {
                       console.log(
                         "Rendering GuideCart with guideSearchCriteria:",
-                        guideSearchCriteria
+                        guideSearchCriteria,
                       );
                       return (
                         <GuideCart
@@ -826,54 +900,464 @@ export default function TouristDashboard() {
 
     if (activeMenuItem === "Trip Planner") {
       return (
-        <div>
-          <h1>Trip Planner</h1>
-          <p>Plan your perfect Sri Lankan adventure</p>
-
-          <div
-            style={{
-              background: "white",
-              padding: "30px",
-              border: "1px solid #ddd",
-              marginTop: "30px",
-            }}
-          >
-            <h3>Create New Itinerary</h3>
-            <div style={{ marginTop: "20px" }}>
-              <input
-                type="text"
-                placeholder="Trip Name"
+        <div
+          style={{
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            minHeight: "100vh",
+            padding: "30px",
+          }}
+        >
+          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: "40px" }}>
+              <h1
                 style={{
-                  width: "100%",
-                  padding: "10px",
-                  marginBottom: "15px",
-                  border: "1px solid #ddd",
+                  fontSize: "48px",
+                  fontWeight: "800",
+                  color: "white",
+                  marginBottom: "10px",
+                  textShadow: "0 2px 10px rgba(0,0,0,0.2)",
                 }}
-              />
-              <input
-                type="date"
-                style={{
-                  width: "48%",
-                  padding: "10px",
-                  marginRight: "4%",
-                  border: "1px solid #ddd",
-                }}
-              />
-              <input
-                type="date"
-                style={{
-                  width: "48%",
-                  padding: "10px",
-                  border: "1px solid #ddd",
-                }}
-              />
-              <button
-                className="btn btn-primary"
-                style={{ marginTop: "15px", width: "100%" }}
               >
-                Create Itinerary
-              </button>
+                AI Trip Planner
+              </h1>
+              <p style={{ fontSize: "18px", color: "rgba(255,255,255,0.9)" }}>
+                Let our AI craft your perfect Sri Lankan adventure
+              </p>
             </div>
+
+            {plannerStep === 0 && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    window.innerWidth > 768 ? "1fr 1fr" : "1fr",
+                  gap: "30px",
+                }}
+              >
+                <div
+                  style={{
+                    background: "rgba(255,255,255,0.95)",
+                    backdropFilter: "blur(20px)",
+                    borderRadius: "25px",
+                    padding: "40px",
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  <div style={{ marginBottom: "30px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "15px",
+                      }}
+                    >
+                      <label
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: "600",
+                          color: "#333",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <Clock size={22} style={{ color: "#667eea" }} />{" "}
+                        Duration
+                      </label>
+                      <span
+                        style={{
+                          fontSize: "24px",
+                          fontWeight: "700",
+                          color: "#667eea",
+                        }}
+                      >
+                        {plannerData.duration} Days
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="14"
+                      value={plannerData.duration}
+                      onChange={(e) =>
+                        setPlannerData({
+                          ...plannerData,
+                          duration: parseInt(e.target.value),
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        height: "8px",
+                        borderRadius: "5px",
+                        background:
+                          "linear-gradient(90deg, #667eea 0%, #764ba2 100%)",
+                        cursor: "pointer",
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginTop: "8px",
+                        fontSize: "12px",
+                        color: "#999",
+                      }}
+                    >
+                      <span>1 Day</span>
+                      <span>14 Days</span>
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: "30px" }}>
+                    <label
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: "600",
+                        color: "#333",
+                        display: "flex",
+                        gap: "8px",
+                        marginBottom: "15px",
+                      }}
+                    >
+                      <Compass size={22} style={{ color: "#764ba2" }} /> Travel
+                      Style
+                    </label>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 1fr)",
+                        gap: "12px",
+                      }}
+                    >
+                      {travelStyles.map((style) => (
+                        <button
+                          key={style.id}
+                          onClick={() => handleStyleToggle(style.id)}
+                          style={{
+                            padding: "15px 10px",
+                            borderRadius: "15px",
+                            border: plannerData.travel_style.includes(style.id)
+                              ? "3px solid #667eea"
+                              : "2px solid #e0e0e0",
+                            background: plannerData.travel_style.includes(
+                              style.id,
+                            )
+                              ? "linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1))"
+                              : "white",
+                            cursor: "pointer",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "8px",
+                            transition: "all 0.3s ease",
+                            boxShadow: plannerData.travel_style.includes(
+                              style.id,
+                            )
+                              ? "0 8px 20px rgba(102,126,234,0.3)"
+                              : "0 2px 8px rgba(0,0,0,0.1)",
+                          }}
+                        >
+                          <span style={{ fontSize: "28px" }}>
+                            {style.emoji}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              color: plannerData.travel_style.includes(style.id)
+                                ? "#667eea"
+                                : "#333",
+                            }}
+                          >
+                            {style.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: "35px" }}>
+                    <label
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: "600",
+                        color: "#333",
+                        display: "flex",
+                        gap: "8px",
+                        marginBottom: "15px",
+                      }}
+                    >
+                      <Users size={22} style={{ color: "#667eea" }} /> Who's
+                      Traveling?
+                    </label>
+                    <div
+                      style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}
+                    >
+                      {groupTypes.map((type) => (
+                        <button
+                          key={type.id}
+                          onClick={() =>
+                            setPlannerData({
+                              ...plannerData,
+                              group_type: type.id,
+                            })
+                          }
+                          style={{
+                            padding: "12px 24px",
+                            borderRadius: "25px",
+                            border:
+                              plannerData.group_type === type.id
+                                ? "2px solid #667eea"
+                                : "2px solid #e0e0e0",
+                            background:
+                              plannerData.group_type === type.id
+                                ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                                : "white",
+                            color:
+                              plannerData.group_type === type.id
+                                ? "white"
+                                : "#333",
+                            cursor: "pointer",
+                            fontSize: "15px",
+                            fontWeight: "600",
+                            transition: "all 0.3s ease",
+                            boxShadow:
+                              plannerData.group_type === type.id
+                                ? "0 4px 15px rgba(102,126,234,0.4)"
+                                : "0 2px 8px rgba(0,0,0,0.1)",
+                          }}
+                        >
+                          {type.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={generateTrip}
+                    disabled={plannerLoading}
+                    style={{
+                      width: "100%",
+                      padding: "18px",
+                      borderRadius: "15px",
+                      border: "none",
+                      background: plannerLoading
+                        ? "#ccc"
+                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      color: "white",
+                      fontSize: "20px",
+                      fontWeight: "700",
+                      cursor: plannerLoading ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "12px",
+                      boxShadow: "0 8px 25px rgba(102,126,234,0.4)",
+                    }}
+                  >
+                    {plannerLoading ? (
+                      <>
+                        <Loader2 className="animate-spin" size={24} />{" "}
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={24} /> Generate My Journey
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div
+                  style={{
+                    background: "rgba(255,255,255,0.95)",
+                    backdropFilter: "blur(20px)",
+                    borderRadius: "25px",
+                    padding: "40px",
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+                    display: window.innerWidth > 768 ? "block" : "none",
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: "700",
+                      color: "#667eea",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    How it works
+                  </h3>
+                  <ul style={{ listStyle: "none", padding: 0 }}>
+                    {[
+                      "Set your preferences for duration, style, and travel group.",
+                      "Our AI analyzes thousands of attractions to build your perfect route.",
+                      "Review your day-by-day itinerary and get ready to explore!",
+                    ].map((text, index) => (
+                      <li
+                        key={index}
+                        style={{
+                          display: "flex",
+                          gap: "15px",
+                          marginBottom: "20px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                            color: "white",
+                            width: "30px",
+                            height: "30px",
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "14px",
+                            fontWeight: "700",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {index + 1}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "16px",
+                            color: "#555",
+                            lineHeight: "1.6",
+                          }}
+                        >
+                          {text}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {plannerStep === 1 && plannerResult && (
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "30px",
+                    flexWrap: "wrap",
+                    gap: "15px",
+                  }}
+                >
+                  <h2
+                    style={{
+                      fontSize: "32px",
+                      fontWeight: "700",
+                      color: "white",
+                      textShadow: "0 2px 10px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    Your {plannerData.duration}-Day Journey
+                  </h2>
+                  <button
+                    onClick={() => setPlannerStep(0)}
+                    style={{
+                      padding: "12px 28px",
+                      borderRadius: "25px",
+                      border: "2px solid white",
+                      background: "rgba(255,255,255,0.2)",
+                      backdropFilter: "blur(10px)",
+                      color: "white",
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Create New Trip
+                  </button>
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      window.innerWidth > 1024
+                        ? "repeat(3, 1fr)"
+                        : window.innerWidth > 768
+                          ? "repeat(2, 1fr)"
+                          : "1fr",
+                    gap: "25px",
+                  }}
+                >
+                  {plannerResult.map((dayItem, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        background: "rgba(255,255,255,0.95)",
+                        backdropFilter: "blur(20px)",
+                        borderRadius: "20px",
+                        padding: "30px",
+                        boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                        transition: "all 0.3s ease",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: "15px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                            color: "white",
+                            padding: "6px 16px",
+                            borderRadius: "20px",
+                            fontSize: "14px",
+                            fontWeight: "700",
+                          }}
+                        >
+                          Day {dayItem.day}
+                        </span>
+                        <MapPin size={20} style={{ color: "#764ba2" }} />
+                      </div>
+                      <h3
+                        style={{
+                          fontSize: "22px",
+                          fontWeight: "700",
+                          color: "#333",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {dayItem.attraction}
+                      </h3>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#999",
+                          marginBottom: "15px",
+                        }}
+                      >
+                        in{" "}
+                        <span style={{ color: "#667eea", fontWeight: "600" }}>
+                          {dayItem.city}
+                        </span>
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "15px",
+                          color: "#555",
+                          lineHeight: "1.6",
+                          background: "rgba(102,126,234,0.05)",
+                          padding: "15px",
+                          borderRadius: "12px",
+                          border: "1px solid rgba(102,126,234,0.1)",
+                        }}
+                      >
+                        {dayItem.short_reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -884,18 +1368,18 @@ export default function TouristDashboard() {
 
       // Hotel bookings filtering
       const upcomingHotels = bookings.filter(
-        (b) => new Date(b.check_in_date) >= currentDate
+        (b) => new Date(b.check_in_date) >= currentDate,
       );
       const pastHotels = bookings.filter(
-        (b) => new Date(b.check_out_date) < currentDate
+        (b) => new Date(b.check_out_date) < currentDate,
       );
 
       // Guide bookings filtering (assuming similar date structure)
       const upcomingGuides = guiderbooking.filter(
-        (b) => new Date(b.start_date || b.check_in_date) >= currentDate
+        (b) => new Date(b.start_date || b.check_in_date) >= currentDate,
       );
       const pastGuides = guiderbooking.filter(
-        (b) => new Date(b.end_date || b.check_out_date) < currentDate
+        (b) => new Date(b.end_date || b.check_out_date) < currentDate,
       );
 
       // Hotel Booking Card Component
@@ -956,13 +1440,13 @@ export default function TouristDashboard() {
             <p>
               <strong>Start Date:</strong>{" "}
               {new Date(
-                booking.start_date || booking.check_in_date
+                booking.start_date || booking.check_in_date,
               ).toLocaleDateString()}
             </p>
             <p>
               <strong>End Date:</strong>{" "}
               {new Date(
-                booking.end_date || booking.check_out_date
+                booking.end_date || booking.check_out_date,
               ).toLocaleDateString()}
             </p>
             <p>
@@ -993,7 +1477,7 @@ export default function TouristDashboard() {
             <small>
               Booked on:{" "}
               {new Date(
-                booking.booking_date || booking.date
+                booking.booking_date || booking.date,
               ).toLocaleDateString()}
             </small>
             <div className="booking-actions">
